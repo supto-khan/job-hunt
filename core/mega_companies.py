@@ -1,0 +1,280 @@
+"""Massive curated company list — Global remote-friendly tech companies and MNCs.
+Every company here has an engineering/software team and has been around 5+ years.
+Organized by category for easy management."""
+
+
+# ── BD-Friendly Tech Companies & Unicorns ──────────────────────────────
+
+BD_FRIENDLY_TECH = [
+    # IT Services (Big 4 + others)
+    {"name": "TCS", "domain": "tcs.com", "tags": "it-services,global-remote", "employee_count": "600000+", "founded_year": 1968},
+    {"name": "Infosys", "domain": "infosys.com", "tags": "it-services,global-remote", "employee_count": "300000+", "founded_year": 1981},
+    {"name": "Wipro", "domain": "wipro.com", "tags": "it-services,global-remote", "employee_count": "250000+", "founded_year": 1945},
+    {"name": "HCLTech", "domain": "hcltech.com", "tags": "it-services,global-remote", "employee_count": "220000+", "founded_year": 1976},
+    {"name": "Tech Mahindra", "domain": "techmahindra.com", "tags": "it-services,global-remote", "employee_count": "150000+", "founded_year": 1986},
+    {"name": "LTIMindtree", "domain": "ltimindtree.com", "tags": "it-services,global-remote", "employee_count": "80000+", "founded_year": 1997},
+    {"name": "Mphasis", "domain": "mphasis.com", "tags": "it-services,global-remote", "employee_count": "30000+", "founded_year": 2000},
+    {"name": "Persistent Systems", "domain": "persistent.com", "tags": "it-services,global-remote", "employee_count": "20000+", "founded_year": 1990},
+    {"name": "Coforge", "domain": "coforge.com", "tags": "it-services,global-remote", "employee_count": "25000+", "founded_year": 1992},
+    {"name": "Zensar Technologies", "domain": "zensar.com", "tags": "it-services,global-remote", "employee_count": "10000+", "founded_year": 1991},
+    {"name": "Hexaware", "domain": "hexaware.com", "tags": "it-services,global-remote", "employee_count": "25000+", "founded_year": 1990},
+    {"name": "Birlasoft", "domain": "birlasoft.com", "tags": "it-services,global-remote", "employee_count": "12000+", "founded_year": 1990},
+    {"name": "Cyient", "domain": "cyient.com", "tags": "it-services,global-remote", "employee_count": "15000+", "founded_year": 1991},
+    {"name": "KPIT Technologies", "domain": "kpit.com", "tags": "it-services,automotive,global-remote", "employee_count": "10000+", "founded_year": 1990},
+    {"name": "Happiest Minds", "domain": "happiestminds.com", "tags": "it-services,global-remote", "employee_count": "5000+", "founded_year": 2011},
+
+    # Global SaaS / Product Companies
+    {"name": "Zoho", "domain": "zoho.com", "tags": "saas,suite,global-remote", "employee_count": "15000+", "founded_year": 1996},
+    {"name": "Freshworks", "domain": "freshworks.com", "tags": "saas,crm,global-remote", "employee_count": "5000+", "founded_year": 2010},
+    {"name": "Postman", "domain": "postman.com", "tags": "api,devtools,global-remote", "employee_count": "1000+", "founded_year": 2014},
+    {"name": "Razorpay", "domain": "razorpay.com", "tags": "fintech,payments,global-remote", "employee_count": "3000+", "founded_year": 2014},
+    {"name": "Chargebee", "domain": "chargebee.com", "tags": "saas,billing,global-remote", "employee_count": "1000+", "founded_year": 2011},
+    {"name": "BrowserStack", "domain": "browserstack.com", "tags": "devtools,testing,global-remote", "employee_count": "2000+", "founded_year": 2011},
+    {"name": "Hasura", "domain": "hasura.io", "tags": "graphql,database,global-remote", "employee_count": "200+", "founded_year": 2017},
+    {"name": "Druva", "domain": "druva.com", "tags": "cloud,data-protection,global-remote", "employee_count": "1500+", "founded_year": 2008},
+    {"name": "Icertis", "domain": "icertis.com", "tags": "saas,contract-mgmt,global-remote", "employee_count": "2000+", "founded_year": 2009},
+    {"name": "CleverTap", "domain": "clevertap.com", "tags": "saas,marketing,global-remote", "employee_count": "700+", "founded_year": 2013},
+    {"name": "WebEngage", "domain": "webengage.com", "tags": "saas,marketing,global-remote", "employee_count": "500+", "founded_year": 2011},
+    {"name": "Leadsquared", "domain": "leadsquared.com", "tags": "saas,crm,global-remote", "employee_count": "1500+", "founded_year": 2012},
+    {"name": "Wingify", "domain": "wingify.com", "tags": "saas,ab-testing,global-remote", "employee_count": "300+", "founded_year": 2009},
+    {"name": "MoEngage", "domain": "moengage.com", "tags": "saas,marketing,global-remote", "employee_count": "800+", "founded_year": 2014},
+    {"name": "Hevo Data", "domain": "hevodata.com", "tags": "data,etl,global-remote", "employee_count": "300+", "founded_year": 2017},
+    {"name": "Unacademy", "domain": "unacademy.com", "tags": "edtech,global-remote", "employee_count": "3000+", "founded_year": 2015},
+    {"name": "Sigmoid", "domain": "sigmoid.com", "tags": "data,analytics,global-remote", "employee_count": "1000+", "founded_year": 2013},
+    {"name": "Yellow.ai", "domain": "yellow.ai", "tags": "ai,chatbot,global-remote", "employee_count": "1000+", "founded_year": 2016},
+    {"name": "Darwinbox", "domain": "darwinbox.com", "tags": "saas,hr,global-remote", "employee_count": "1000+", "founded_year": 2015},
+
+    # Global Fintech
+    {"name": "PhonePe", "domain": "phonepe.com", "tags": "fintech,payments,global-remote", "employee_count": "5000+", "founded_year": 2015},
+    {"name": "Paytm", "domain": "paytm.com", "tags": "fintech,payments,global-remote", "employee_count": "10000+", "founded_year": 2010},
+    {"name": "CRED", "domain": "cred.club", "tags": "fintech,global-remote", "employee_count": "1000+", "founded_year": 2018},
+    {"name": "Groww", "domain": "groww.in", "tags": "fintech,investing,global-remote", "employee_count": "1000+", "founded_year": 2016},
+    {"name": "Zerodha", "domain": "zerodha.com", "tags": "fintech,trading,global-remote", "employee_count": "1500+", "founded_year": 2010},
+    {"name": "Upstox", "domain": "upstox.com", "tags": "fintech,trading,global-remote", "employee_count": "1000+", "founded_year": 2009},
+    {"name": "PolicyBazaar", "domain": "policybazaar.com", "tags": "fintech,insurance,global-remote", "employee_count": "5000+", "founded_year": 2008},
+    {"name": "BharatPe", "domain": "bharatpe.com", "tags": "fintech,payments,global-remote", "employee_count": "1500+", "founded_year": 2018},
+    {"name": "Slice", "domain": "sliceit.com", "tags": "fintech,cards,global-remote", "employee_count": "1000+", "founded_year": 2016},
+    {"name": "Jupiter", "domain": "jupiter.money", "tags": "fintech,neobank,global-remote", "employee_count": "500+", "founded_year": 2019},
+    {"name": "INDmoney", "domain": "indmoney.com", "tags": "fintech,wealth,global-remote", "employee_count": "500+", "founded_year": 2019},
+    {"name": "Niyo", "domain": "goniyo.com", "tags": "fintech,neobank,global-remote", "employee_count": "500+", "founded_year": 2015},
+    {"name": "Juspay", "domain": "juspay.in", "tags": "fintech,payments,global-remote", "employee_count": "800+", "founded_year": 2012},
+    {"name": "Pine Labs", "domain": "pinelabs.com", "tags": "fintech,payments,global-remote", "employee_count": "2000+", "founded_year": 1998},
+    {"name": "Cashfree", "domain": "cashfree.com", "tags": "fintech,payments,global-remote", "employee_count": "500+", "founded_year": 2015},
+
+    # Global E-commerce / Marketplace
+    {"name": "Flipkart", "domain": "flipkart.com", "tags": "ecommerce,global-remote", "employee_count": "30000+", "founded_year": 2007},
+    {"name": "Myntra", "domain": "myntra.com", "tags": "ecommerce,fashion,global-remote", "employee_count": "5000+", "founded_year": 2007},
+    {"name": "Meesho", "domain": "meesho.com", "tags": "ecommerce,social-commerce,global-remote", "employee_count": "2000+", "founded_year": 2015},
+    {"name": "Nykaa", "domain": "nykaa.com", "tags": "ecommerce,beauty,global-remote", "employee_count": "3000+", "founded_year": 2012},
+    {"name": "BigBasket", "domain": "bigbasket.com", "tags": "ecommerce,grocery,global-remote", "employee_count": "5000+", "founded_year": 2011},
+    {"name": "Swiggy", "domain": "swiggy.com", "tags": "delivery,food,global-remote", "employee_count": "5000+", "founded_year": 2014},
+    {"name": "Zomato", "domain": "zomato.com", "tags": "delivery,food,global-remote", "employee_count": "5000+", "founded_year": 2008},
+    {"name": "Dunzo", "domain": "dunzo.com", "tags": "delivery,hyperlocal,global-remote", "employee_count": "1000+", "founded_year": 2015},
+    {"name": "Blinkit", "domain": "blinkit.com", "tags": "delivery,grocery,global-remote", "employee_count": "2000+", "founded_year": 2013},
+    {"name": "Urban Company", "domain": "urbancompany.com", "tags": "marketplace,services,global-remote", "employee_count": "2000+", "founded_year": 2014},
+    {"name": "CarDekho", "domain": "cardekho.com", "tags": "marketplace,auto,global-remote", "employee_count": "3000+", "founded_year": 2008},
+    {"name": "Cars24", "domain": "cars24.com", "tags": "marketplace,auto,global-remote", "employee_count": "5000+", "founded_year": 2015},
+    {"name": "OLX Bangladesh", "domain": "olx.in", "tags": "marketplace,classifieds,global-remote", "employee_count": "1000+", "founded_year": 2006},
+    {"name": "Practo", "domain": "practo.com", "tags": "healthtech,marketplace,global-remote", "employee_count": "1000+", "founded_year": 2008},
+    {"name": "1mg", "domain": "1mg.com", "tags": "healthtech,pharmacy,global-remote", "employee_count": "2000+", "founded_year": 2013},
+    {"name": "Lenskart", "domain": "lenskart.com", "tags": "ecommerce,eyewear,global-remote", "employee_count": "5000+", "founded_year": 2010},
+    {"name": "Purplle", "domain": "purplle.com", "tags": "ecommerce,beauty,global-remote", "employee_count": "1000+", "founded_year": 2012},
+
+    # Global Travel / Mobility
+    {"name": "Ola", "domain": "olacabs.com", "tags": "mobility,ride-hailing,global-remote", "employee_count": "5000+", "founded_year": 2010},
+    {"name": "MakeMyTrip", "domain": "makemytrip.com", "tags": "travel,global-remote", "employee_count": "3000+", "founded_year": 2000},
+    {"name": "Goibibo", "domain": "goibibo.com", "tags": "travel,global-remote", "employee_count": "1000+", "founded_year": 2009},
+    {"name": "Rapido", "domain": "rapido.bike", "tags": "mobility,bike-taxi,global-remote", "employee_count": "1000+", "founded_year": 2015},
+    {"name": "Cleartrip", "domain": "cleartrip.com", "tags": "travel,global-remote", "employee_count": "500+", "founded_year": 2006},
+    {"name": "ixigo", "domain": "ixigo.com", "tags": "travel,global-remote", "employee_count": "500+", "founded_year": 2007},
+    {"name": "RedBus", "domain": "redbus.in", "tags": "travel,bus,global-remote", "employee_count": "500+", "founded_year": 2006},
+
+    # Global Edtech
+    {"name": "BYJU'S", "domain": "byjus.com", "tags": "edtech,global-remote", "employee_count": "10000+", "founded_year": 2011},
+    {"name": "Vedantu", "domain": "vedantu.com", "tags": "edtech,global-remote", "employee_count": "2000+", "founded_year": 2011},
+    {"name": "upGrad", "domain": "upgrad.com", "tags": "edtech,global-remote", "employee_count": "3000+", "founded_year": 2015},
+    {"name": "Scaler Academy", "domain": "scaler.com", "tags": "edtech,global-remote", "employee_count": "1000+", "founded_year": 2019},
+    {"name": "Physics Wallah", "domain": "pw.live", "tags": "edtech,global-remote", "employee_count": "3000+", "founded_year": 2014},
+    {"name": "Eruditus", "domain": "eruditus.com", "tags": "edtech,global-remote", "employee_count": "2000+", "founded_year": 2010},
+    {"name": "Great Learning", "domain": "greatlearning.in", "tags": "edtech,global-remote", "employee_count": "2000+", "founded_year": 2013},
+    {"name": "Simplilearn", "domain": "simplilearn.com", "tags": "edtech,global-remote", "employee_count": "2000+", "founded_year": 2010},
+
+    # Global Conglomerates (tech arms)
+    {"name": "Jio Platforms", "domain": "jio.com", "tags": "telecom,digital,global-remote", "employee_count": "50000+", "founded_year": 2016},
+    {"name": "Tata Digital", "domain": "tatadigital.com", "tags": "digital,ecommerce,global-remote", "employee_count": "5000+", "founded_year": 2019},
+    {"name": "Tata Elxsi", "domain": "tataelxsi.com", "tags": "design,engineering,global-remote", "employee_count": "10000+", "founded_year": 1989},
+    {"name": "Tata Communications", "domain": "tatacommunications.com", "tags": "telecom,cloud,global-remote", "employee_count": "12000+", "founded_year": 1986},
+    {"name": "Infosys BPM", "domain": "infosysbpm.com", "tags": "bpm,it-services,global-remote", "employee_count": "60000+", "founded_year": 2002},
+    {"name": "Mahindra Comviva", "domain": "comviva.com", "tags": "telecom,fintech,global-remote", "employee_count": "2000+", "founded_year": 1999},
+    {"name": "Reliance Digital", "domain": "reliancedigital.in", "tags": "retail,digital,global-remote", "employee_count": "5000+", "founded_year": 2006},
+    {"name": "Airtel X Labs", "domain": "airtel.in", "tags": "telecom,digital,global-remote", "employee_count": "5000+", "founded_year": 1995},
+
+    # Global Enterprise / B2B
+    {"name": "Tekion", "domain": "tekion.com", "tags": "saas,automotive,global-remote", "employee_count": "2000+", "founded_year": 2016},
+    {"name": "Mindtickle", "domain": "mindtickle.com", "tags": "saas,sales-enablement,global-remote", "employee_count": "700+", "founded_year": 2011},
+    {"name": "Whatfix", "domain": "whatfix.com", "tags": "saas,digital-adoption,global-remote", "employee_count": "800+", "founded_year": 2014},
+    {"name": "Capillary Technologies", "domain": "capillarytech.com", "tags": "saas,retail,global-remote", "employee_count": "500+", "founded_year": 2008},
+    {"name": "Innovaccer", "domain": "innovaccer.com", "tags": "healthtech,data,global-remote", "employee_count": "1000+", "founded_year": 2014},
+    {"name": "Zetwerk", "domain": "zetwerk.com", "tags": "manufacturing,b2b,global-remote", "employee_count": "2000+", "founded_year": 2018},
+    {"name": "OfBusiness", "domain": "ofbusiness.com", "tags": "b2b,commerce,global-remote", "employee_count": "1000+", "founded_year": 2016},
+    {"name": "Khatabook", "domain": "khatabook.com", "tags": "fintech,smb,global-remote", "employee_count": "500+", "founded_year": 2019},
+    {"name": "Vyapar", "domain": "vyaparapp.in", "tags": "fintech,accounting,global-remote", "employee_count": "500+", "founded_year": 2017},
+]
+
+# ── MNCs with Large Bangladesh Engineering Centers ──────────────────
+
+MNCS_BD = [
+    {"name": "Google Bangladesh", "domain": "google.com", "tags": "big-tech,global-remote", "employee_count": "10000+", "founded_year": 1998},
+    {"name": "Microsoft Bangladesh", "domain": "microsoft.com", "tags": "big-tech,global-remote", "employee_count": "20000+", "founded_year": 1975},
+    {"name": "Amazon Bangladesh", "domain": "amazon.in", "tags": "big-tech,ecommerce,global-remote", "employee_count": "100000+", "founded_year": 1994},
+    {"name": "Meta Bangladesh", "domain": "meta.com", "tags": "big-tech,social,global-remote", "employee_count": "5000+", "founded_year": 2004},
+    {"name": "Apple Bangladesh", "domain": "apple.com", "tags": "big-tech,global-remote", "employee_count": "5000+", "founded_year": 1976},
+    {"name": "Netflix Bangladesh", "domain": "netflix.com", "tags": "streaming,global-remote", "employee_count": "1000+", "founded_year": 1997},
+    {"name": "Uber Bangladesh", "domain": "uber.com", "tags": "mobility,global-remote", "employee_count": "5000+", "founded_year": 2009},
+    {"name": "Salesforce Bangladesh", "domain": "salesforce.com", "tags": "saas,crm,global-remote", "employee_count": "8000+", "founded_year": 1999},
+    {"name": "Adobe Bangladesh", "domain": "adobe.com", "tags": "creative,saas,global-remote", "employee_count": "6000+", "founded_year": 1982},
+    {"name": "Oracle Bangladesh", "domain": "oracle.com", "tags": "enterprise,database,global-remote", "employee_count": "40000+", "founded_year": 1977},
+    {"name": "SAP Bangladesh", "domain": "sap.com", "tags": "enterprise,erp,global-remote", "employee_count": "15000+", "founded_year": 1972},
+    {"name": "IBM Bangladesh", "domain": "ibm.com", "tags": "enterprise,cloud,global-remote", "employee_count": "100000+", "founded_year": 1911},
+    {"name": "Cisco Bangladesh", "domain": "cisco.com", "tags": "networking,global-remote", "employee_count": "12000+", "founded_year": 1984},
+    {"name": "Intel Bangladesh", "domain": "intel.com", "tags": "semiconductor,global-remote", "employee_count": "10000+", "founded_year": 1968},
+    {"name": "Qualcomm Bangladesh", "domain": "qualcomm.com", "tags": "semiconductor,global-remote", "employee_count": "8000+", "founded_year": 1985},
+    {"name": "Samsung Bangladesh", "domain": "samsung.com", "tags": "electronics,global-remote", "employee_count": "5000+", "founded_year": 1938},
+    {"name": "Goldman Sachs Bangladesh", "domain": "goldmansachs.com", "tags": "finance,global-remote", "employee_count": "10000+", "founded_year": 1869},
+    {"name": "JP Morgan Bangladesh", "domain": "jpmorgan.com", "tags": "finance,global-remote", "employee_count": "50000+", "founded_year": 1799},
+    {"name": "Morgan Stanley Bangladesh", "domain": "morganstanley.com", "tags": "finance,global-remote", "employee_count": "10000+", "founded_year": 1935},
+    {"name": "Deutsche Bank Bangladesh", "domain": "db.com", "tags": "finance,global-remote", "employee_count": "12000+", "founded_year": 1870},
+    {"name": "Barclays Bangladesh", "domain": "barclays.com", "tags": "finance,global-remote", "employee_count": "8000+", "founded_year": 1690},
+    {"name": "Visa Bangladesh", "domain": "visa.com", "tags": "fintech,payments,global-remote", "employee_count": "4000+", "founded_year": 1958},
+    {"name": "Mastercard Bangladesh", "domain": "mastercard.com", "tags": "fintech,payments,global-remote", "employee_count": "3000+", "founded_year": 1966},
+    {"name": "PayPal Bangladesh", "domain": "paypal.com", "tags": "fintech,payments,global-remote", "employee_count": "4000+", "founded_year": 1998},
+    {"name": "Stripe Bangladesh", "domain": "stripe.com", "tags": "fintech,payments,global-remote", "employee_count": "500+", "founded_year": 2010},
+    {"name": "VMware Bangladesh", "domain": "vmware.com", "tags": "cloud,virtualization,global-remote", "employee_count": "5000+", "founded_year": 1998},
+    {"name": "ServiceNow Bangladesh", "domain": "servicenow.com", "tags": "saas,itsm,global-remote", "employee_count": "3000+", "founded_year": 2004},
+    {"name": "Atlassian Bangladesh", "domain": "atlassian.com", "tags": "saas,devtools,global-remote", "employee_count": "2000+", "founded_year": 2002},
+    {"name": "Intuit Bangladesh", "domain": "intuit.com", "tags": "saas,fintech,global-remote", "employee_count": "3000+", "founded_year": 1983},
+    {"name": "LinkedIn Bangladesh", "domain": "linkedin.com", "tags": "social,professional,global-remote", "employee_count": "3000+", "founded_year": 2002},
+    {"name": "Twitter Bangladesh", "domain": "x.com", "tags": "social,media,global-remote", "employee_count": "500+", "founded_year": 2006},
+    {"name": "Spotify Bangladesh", "domain": "spotify.com", "tags": "music,streaming,global-remote", "employee_count": "1000+", "founded_year": 2006},
+    {"name": "Shopify Bangladesh", "domain": "shopify.com", "tags": "ecommerce,saas,global-remote", "employee_count": "500+", "founded_year": 2006},
+    {"name": "Twilio Bangladesh", "domain": "twilio.com", "tags": "communications,api,global-remote", "employee_count": "1000+", "founded_year": 2008},
+    {"name": "Confluent Bangladesh", "domain": "confluent.io", "tags": "kafka,streaming,global-remote", "employee_count": "500+", "founded_year": 2014},
+    {"name": "Elastic Bangladesh", "domain": "elastic.co", "tags": "search,observability,global-remote", "employee_count": "500+", "founded_year": 2012},
+    {"name": "MongoDB Bangladesh", "domain": "mongodb.com", "tags": "database,nosql,global-remote", "employee_count": "1000+", "founded_year": 2007},
+    {"name": "Grafana Labs Bangladesh", "domain": "grafana.com", "tags": "monitoring,observability,global-remote", "employee_count": "500+", "founded_year": 2014},
+    {"name": "DataDog Bangladesh", "domain": "datadoghq.com", "tags": "monitoring,observability,global-remote", "employee_count": "500+", "founded_year": 2010},
+    {"name": "CrowdStrike Bangladesh", "domain": "crowdstrike.com", "tags": "cybersecurity,cloud,global-remote", "employee_count": "1000+", "founded_year": 2011},
+    {"name": "Palo Alto Networks Bangladesh", "domain": "paloaltonetworks.com", "tags": "cybersecurity,global-remote", "employee_count": "3000+", "founded_year": 2005},
+    {"name": "Nutanix Bangladesh", "domain": "nutanix.com", "tags": "cloud,infrastructure,global-remote", "employee_count": "3000+", "founded_year": 2009},
+    {"name": "Cohesity Bangladesh", "domain": "cohesity.com", "tags": "data,backup,global-remote", "employee_count": "500+", "founded_year": 2013},
+    {"name": "ThoughtSpot Bangladesh", "domain": "thoughtspot.com", "tags": "analytics,bi,global-remote", "employee_count": "500+", "founded_year": 2012},
+    {"name": "Sprinklr Bangladesh", "domain": "sprinklr.com", "tags": "saas,social,global-remote", "employee_count": "2000+", "founded_year": 2009},
+    {"name": "Couchbase Bangladesh", "domain": "couchbase.com", "tags": "database,nosql,global-remote", "employee_count": "500+", "founded_year": 2011},
+    {"name": "Commvault Bangladesh", "domain": "commvault.com", "tags": "data,backup,global-remote", "employee_count": "1000+", "founded_year": 1996},
+    {"name": "NetApp Bangladesh", "domain": "netapp.com", "tags": "storage,cloud,global-remote", "employee_count": "3000+", "founded_year": 1992},
+    {"name": "Akamai Bangladesh", "domain": "akamai.com", "tags": "cdn,security,global-remote", "employee_count": "1000+", "founded_year": 1998},
+    {"name": "Freshworks Bangladesh", "domain": "freshworks.com", "tags": "saas,crm,global-remote", "employee_count": "5000+", "founded_year": 2010},
+    {"name": "ThoughtWorks Bangladesh", "domain": "thoughtworks.com", "tags": "consulting,engineering,global-remote", "employee_count": "5000+", "founded_year": 1993},
+    {"name": "Accenture Bangladesh", "domain": "accenture.com", "tags": "consulting,it-services,global-remote", "employee_count": "300000+", "founded_year": 1989},
+    {"name": "Deloitte Bangladesh", "domain": "deloitte.com", "tags": "consulting,global-remote", "employee_count": "50000+", "founded_year": 1845},
+    {"name": "EY Bangladesh", "domain": "ey.com", "tags": "consulting,global-remote", "employee_count": "40000+", "founded_year": 1989},
+    {"name": "KPMG Bangladesh", "domain": "kpmg.com", "tags": "consulting,global-remote", "employee_count": "30000+", "founded_year": 1987},
+    {"name": "Capgemini Bangladesh", "domain": "capgemini.com", "tags": "consulting,it-services,global-remote", "employee_count": "150000+", "founded_year": 1967},
+    {"name": "Cognizant Bangladesh", "domain": "cognizant.com", "tags": "it-services,global-remote", "employee_count": "250000+", "founded_year": 1994},
+    {"name": "DXC Technology Bangladesh", "domain": "dxc.com", "tags": "it-services,global-remote", "employee_count": "20000+", "founded_year": 2017},
+]
+
+# ── Global Remote-Friendly Companies (hire from Bangladesh) ─────────
+
+GLOBAL_REMOTE = [
+    {"name": "GitLab", "domain": "gitlab.com", "tags": "devops,open-source,remote-first", "employee_count": "2000+", "founded_year": 2014},
+    {"name": "Automattic", "domain": "automattic.com", "tags": "wordpress,open-source,remote-first", "employee_count": "2000+", "founded_year": 2005},
+    {"name": "Canonical", "domain": "canonical.com", "tags": "ubuntu,open-source,remote-first", "employee_count": "1000+", "founded_year": 2004},
+    {"name": "Zapier", "domain": "zapier.com", "tags": "automation,saas,remote-first", "employee_count": "800+", "founded_year": 2011},
+    {"name": "Buffer", "domain": "buffer.com", "tags": "social,saas,remote-first", "employee_count": "100+", "founded_year": 2010},
+    {"name": "Toggl", "domain": "toggl.com", "tags": "productivity,saas,remote-first", "employee_count": "200+", "founded_year": 2006},
+    {"name": "Doist", "domain": "doist.com", "tags": "productivity,saas,remote-first", "employee_count": "100+", "founded_year": 2007},
+    {"name": "Hotjar", "domain": "hotjar.com", "tags": "analytics,saas,remote-first", "employee_count": "500+", "founded_year": 2014},
+    {"name": "Deel", "domain": "deel.com", "tags": "hr,payroll,remote-first", "employee_count": "3000+", "founded_year": 2019},
+    {"name": "Remote.com", "domain": "remote.com", "tags": "hr,remote-first", "employee_count": "1000+", "founded_year": 2019},
+    {"name": "Toptal", "domain": "toptal.com", "tags": "marketplace,talent,remote-first", "employee_count": "1000+", "founded_year": 2010},
+    {"name": "Turing", "domain": "turing.com", "tags": "marketplace,talent,remote-first", "employee_count": "1000+", "founded_year": 2018},
+    {"name": "Andela", "domain": "andela.com", "tags": "marketplace,talent,remote-first", "employee_count": "500+", "founded_year": 2014},
+    {"name": "Mattermost", "domain": "mattermost.com", "tags": "chat,open-source,remote-first", "employee_count": "300+", "founded_year": 2016},
+    {"name": "Supabase", "domain": "supabase.com", "tags": "database,open-source,remote-first", "employee_count": "200+", "founded_year": 2020},
+    {"name": "Linear", "domain": "linear.app", "tags": "project-management,saas,remote-first", "employee_count": "100+", "founded_year": 2019},
+    {"name": "Cal.com", "domain": "cal.com", "tags": "scheduling,open-source,remote-first", "employee_count": "100+", "founded_year": 2021},
+    {"name": "Airbyte", "domain": "airbyte.com", "tags": "data,etl,open-source,remote-first", "employee_count": "200+", "founded_year": 2020},
+    {"name": "Grafana Labs", "domain": "grafana.com", "tags": "monitoring,open-source,remote-first", "employee_count": "1000+", "founded_year": 2014},
+    {"name": "Elastic", "domain": "elastic.co", "tags": "search,open-source,remote-first", "employee_count": "3000+", "founded_year": 2012},
+    {"name": "Wikimedia Foundation", "domain": "wikimedia.org", "tags": "non-profit,open-source,remote-first", "employee_count": "500+", "founded_year": 2003},
+    {"name": "Mozilla", "domain": "mozilla.org", "tags": "browser,open-source,remote-first", "employee_count": "1000+", "founded_year": 2003},
+    {"name": "Red Hat", "domain": "redhat.com", "tags": "linux,open-source,remote-first", "employee_count": "20000+", "founded_year": 1993},
+    {"name": "SUSE", "domain": "suse.com", "tags": "linux,open-source,remote-first", "employee_count": "2000+", "founded_year": 1992},
+    {"name": "DigitalOcean", "domain": "digitalocean.com", "tags": "cloud,remote-first", "employee_count": "1000+", "founded_year": 2011},
+    {"name": "Cloudflare", "domain": "cloudflare.com", "tags": "infrastructure,security,cdn", "employee_count": "3000+", "founded_year": 2009},
+    {"name": "Hashicorp", "domain": "hashicorp.com", "tags": "devops,infrastructure,open-source", "employee_count": "2000+", "founded_year": 2012},
+    {"name": "Kong", "domain": "konghq.com", "tags": "api-gateway,open-source", "employee_count": "500+", "founded_year": 2009},
+    {"name": "Snyk", "domain": "snyk.io", "tags": "security,devtools", "employee_count": "1000+", "founded_year": 2015},
+    {"name": "Docker", "domain": "docker.com", "tags": "containers,devtools", "employee_count": "500+", "founded_year": 2008},
+    {"name": "CircleCI", "domain": "circleci.com", "tags": "ci-cd,devops", "employee_count": "500+", "founded_year": 2011},
+    {"name": "PagerDuty", "domain": "pagerduty.com", "tags": "incident-mgmt,saas", "employee_count": "1000+", "founded_year": 2009},
+    {"name": "Datadog", "domain": "datadoghq.com", "tags": "monitoring,observability", "employee_count": "5000+", "founded_year": 2010},
+    {"name": "New Relic", "domain": "newrelic.com", "tags": "monitoring,observability", "employee_count": "2000+", "founded_year": 2008},
+    {"name": "Sentry", "domain": "sentry.io", "tags": "error-tracking,monitoring", "employee_count": "500+", "founded_year": 2012},
+    {"name": "LaunchDarkly", "domain": "launchdarkly.com", "tags": "feature-flags,devtools", "employee_count": "500+", "founded_year": 2014},
+    {"name": "Vercel", "domain": "vercel.com", "tags": "cloud,frontend,devtools", "employee_count": "500+", "founded_year": 2015},
+    {"name": "Netlify", "domain": "netlify.com", "tags": "cloud,jamstack", "employee_count": "300+", "founded_year": 2014},
+    {"name": "Render", "domain": "render.com", "tags": "cloud,paas", "employee_count": "200+", "founded_year": 2018},
+    {"name": "Fly.io", "domain": "fly.io", "tags": "cloud,edge", "employee_count": "100+", "founded_year": 2017},
+    {"name": "Temporal", "domain": "temporal.io", "tags": "workflow,orchestration", "employee_count": "200+", "founded_year": 2019},
+    {"name": "Cockroach Labs", "domain": "cockroachlabs.com", "tags": "database,distributed", "employee_count": "500+", "founded_year": 2015},
+    {"name": "PlanetScale", "domain": "planetscale.com", "tags": "database,mysql", "employee_count": "200+", "founded_year": 2018},
+    {"name": "Neon", "domain": "neon.tech", "tags": "database,postgres,serverless", "employee_count": "200+", "founded_year": 2021},
+    {"name": "Retool", "domain": "retool.com", "tags": "internal-tools,low-code", "employee_count": "500+", "founded_year": 2017},
+    {"name": "Webflow", "domain": "webflow.com", "tags": "no-code,web-design", "employee_count": "1000+", "founded_year": 2013},
+    {"name": "Figma", "domain": "figma.com", "tags": "design,saas", "employee_count": "1000+", "founded_year": 2012},
+    {"name": "Notion", "domain": "notion.so", "tags": "productivity,saas", "employee_count": "500+", "founded_year": 2016},
+    {"name": "Stripe", "domain": "stripe.com", "tags": "fintech,payments,api", "employee_count": "5000+", "founded_year": 2010},
+    {"name": "Plaid", "domain": "plaid.com", "tags": "fintech,api,banking", "employee_count": "1000+", "founded_year": 2013},
+    {"name": "Brex", "domain": "brex.com", "tags": "fintech,corporate-cards", "employee_count": "1000+", "founded_year": 2017},
+    {"name": "Ramp", "domain": "ramp.com", "tags": "fintech,expense", "employee_count": "500+", "founded_year": 2019},
+    {"name": "Coinbase", "domain": "coinbase.com", "tags": "crypto,exchange", "employee_count": "3000+", "founded_year": 2012},
+    {"name": "Ripple", "domain": "ripple.com", "tags": "crypto,payments", "employee_count": "500+", "founded_year": 2012},
+]
+
+
+def get_all_mega_companies() -> list[dict]:
+    """Return all companies with india_friendly and id set."""
+    from core.models import Company
+    result = []
+    seen = set()
+
+    for category, companies, default_bd in [
+        ("bd-tech", BD_FRIENDLY_TECH, "yes"),
+        ("mncs-bd", MNCS_BD, "yes"),
+        ("global-remote", GLOBAL_REMOTE, "maybe"),
+    ]:
+        for c in companies:
+            company_id = Company.make_id(c["name"])
+            if company_id in seen:
+                continue
+            seen.add(company_id)
+
+            result.append({
+                "id": company_id,
+                "name": c["name"],
+                "domain": c.get("domain", ""),
+                "careers_url": "",
+                "ats_platform": "unknown",
+                "ats_slug": "",
+                "founded_year": c.get("founded_year", 0),
+                "employee_count": c.get("employee_count", ""),
+                "tags": c.get("tags", ""),
+                "india_friendly": c.get("india_friendly", default_bd),
+                "last_crawled": "",
+                "crawl_status": "paused",  # paused until ATS detected
+                "notes": category,
+            })
+
+    return result

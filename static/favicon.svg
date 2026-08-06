@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="50%" stop-color="#4facfe" />
+      <stop offset="100%" stop-color="#00c6ff" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#9b51e0" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="112" fill="#0b0f19" />
+
+  <!-- Briefcase Silhouette -->
+  <rect x="96" y="176" width="320" height="240" rx="36" fill="none" stroke="url(#purpleGrad)" stroke-width="24" filter="url(#glow)" />
+  <path d="M192 176 V136 C192 118.3 206.3 104 224 104 H288 C305.7 104 320 118.3 320 136 V176" fill="none" stroke="url(#purpleGrad)" stroke-width="24" stroke-linecap="round" />
+
+  <!-- Target / Magnifying Lens Reticle -->
+  <circle cx="256" cy="296" r="88" fill="none" stroke="url(#grad)" stroke-width="24" filter="url(#glow)" />
+  <circle cx="256" cy="296" r="48" fill="none" stroke="url(#grad)" stroke-width="16" />
+  <circle cx="256" cy="296" r="16" fill="url(#grad)" />
+
+  <!-- Crosshairs -->
+  <line x1="256" y1="184" x2="256" y2="208" stroke="url(#grad)" stroke-width="16" stroke-linecap="round" />
+  <line x1="256" y1="384" x2="256" y2="408" stroke="url(#grad)" stroke-width="16" stroke-linecap="round" />
+  <line x1="144" y1="296" x2="168" y2="296" stroke="url(#grad)" stroke-width="16" stroke-linecap="round" />
+  <line x1="344" y1="296" x2="368" y2="296" stroke="url(#grad)" stroke-width="16" stroke-linecap="round" />
+
+  <!-- Lens Handle -->
+  <line x1="324" y1="364" x2="400" y2="440" stroke="url(#purpleGrad)" stroke-width="24" stroke-linecap="round" filter="url(#glow)" />
+</svg>
