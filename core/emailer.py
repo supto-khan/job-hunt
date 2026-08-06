@@ -355,9 +355,17 @@ async def run_daily_pipeline(send: bool = True) -> dict:
         email_result = send_daily_digest()
         log(f"  Email: {email_result}")
 
-    log("=== Daily Pipeline Complete ===")
-    return {
+    summary_data = {
         "collection": {"new": collect_stats.get("new", 0)},
         "outreach_generated": generated,
         "email": email_result,
     }
+
+    try:
+        from core.notifications import send_pipeline_summary_notification
+        send_pipeline_summary_notification(summary_data)
+    except Exception as e:
+        log(f"  Summary notification error: {e}")
+
+    log("=== Daily Pipeline Complete ===")
+    return summary_data

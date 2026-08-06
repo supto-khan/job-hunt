@@ -1,53 +1,51 @@
-"""Rule-based relevance scorer. No API key needed.
-Scores jobs 0-100 based on title, description, and tech stack match.
-Also detects whether a job is Bangladesh-remote-friendly.
-
-All preferences (keyword lists, weights, experience target, candidate core tech)
-come from the active profile (see core.profile). Callers can pass `profile=`
-to use a specific profile for a batch — otherwise the active one is looked up.
-"""
-
+import re
 from core.profile import get_active_profile
 
 
 def extract_tech_stack(text: str, profile: dict = None) -> list[str]:
-    """Extract matching tech keywords from text."""
+    """Extract matching tech keywords from text using regex word boundaries to avoid substring false positives."""
     profile = profile or get_active_profile()
     tech_list = profile["search"].get("relevant_tech") or []
     text_lower = text.lower()
-    return [tech for tech in tech_list if tech in text_lower]
+    found = []
+    for tech in tech_list:
+        t_clean = tech.strip().lower()
+        if not t_clean:
+            continue
+        # Use regex word boundaries for single words/acronyms to prevent false substring hits (e.g. 'c' in 'docker', 'php' in 'graphical')
+        pattern = r'\b' + re.escape(t_clean) + r'\b'
+        if re.search(pattern, text_lower):
+            found.append(tech)
+    return found
 
 
 def estimate_experience_level(text: str) -> str:
-    """Guess experience level from description.
-
-    These keyword lists are linguistic patterns — not user preferences — so
-    they stay hardcoded. The profile decides how the detected level is
-    *scored* via experience_bonuses, not how it's detected.
-    """
+    """Guess experience level from description using word-boundary pattern matching."""
     text_lower = text.lower()
-    if any(w in text_lower for w in [
-        "intern", "internship", "trainee", "entry level", "entry-level",
-        "0-1 year", "0-2 years", "fresher", "new grad", "graduate",
-        "campus", "freshers", "b.tech", "b.e.", "mca",
-    ]):
-        # Fine-grained: distinguish "junior/fresher" from "intern/trainee"
-        if any(w in text_lower for w in ["intern", "internship", "trainee"]):
-            return "fresher"
+    fresher_patterns = [
+        r'\bintern\b', r'\binternship\b', r'\btrainee\b', r'\bentry level\b', r'\bentry-level\b',
+        r'\b0-1 year\b', r'\b0-2 years\b', r'\bfresher\b', r'\bnew grad\b', r'\bgraduate\b'
+    ]
+    if any(re.search(pat, text_lower) for pat in fresher_patterns):
         return "fresher"
-    if any(w in text_lower for w in [
-        "senior", "sr.", "lead", "principal", "staff",
-        "8+ years", "10+ years", "15+ years",
-    ]):
+
+    senior_patterns = [
+        r'\bsenior\b', r'\bsr\.\b', r'\bsr\b', r'\blead\b', r'\bprincipal\b', r'\bstaff\b',
+        r'\b8\+ years\b', r'\b10\+ years\b'
+    ]
+    if any(re.search(pat, text_lower) for pat in senior_patterns):
         return "senior"
-    if any(w in text_lower for w in [
-        "junior", "jr.", "1+ year", "1-2 years",
-    ]):
+
+    junior_patterns = [
+        r'\bjunior\b', r'\bjr\.\b', r'\bjr\b', r'\b1\+ year\b', r'\b1-2 years\b'
+    ]
+    if any(re.search(pat, text_lower) for pat in junior_patterns):
         return "junior"
-    if any(w in text_lower for w in [
-        "mid", "middle", "3+ years", "2+ years", "4+ years", "5+ years",
-        "3-5 years", "2-4 years", "4-6 years",
-    ]):
+
+    mid_patterns = [
+        r'\bmid\b', r'\bmiddle\b', r'\b3\+ years\b', r'\b2\+ years\b', r'\b4\+ years\b', r'\b5\+ years\b'
+    ]
+    if any(re.search(pat, text_lower) for pat in mid_patterns):
         return "mid"
     return "mid"
 
@@ -151,7 +149,7 @@ def check_bd_friendly(location: str, description: str,
 
 def score_job(title: str, description: str, location: str = "",
               profile: dict = None) -> dict:
-    """Score a job 0-100 against the active (or passed) profile."""
+    """Score a job 0-100 against the active (or passed) profile with exact word-boundary matching."""
     profile = profile or get_active_profile()
     search = profile["search"]
     scoring = profile["scoring"]
@@ -163,7 +161,7 @@ def score_job(title: str, description: str, location: str = "",
 
     pos_titles = search.get("title_keywords_positive") or []
     neg_titles = search.get("title_keywords_negative") or []
-    core_tech_list = scoring.get("core_tech") or []
+    core_tech_list = [t.lower() for t in (scoring.get("core_tech") or [])]
     signal_list = scoring.get("backend_signals") or []
     exp_bonuses = scoring.get("experience_bonuses") or {}
     exp_target = scoring.get("experience_target", "mid")
@@ -174,24 +172,33 @@ def score_job(title: str, description: str, location: str = "",
     full_text = f"{title} {description}".lower()
     title_lower = title.lower()
 
-    # Title relevance
-    title_matches = [kw for kw in pos_titles if kw in title_lower]
+    # Title relevance matching with word boundaries
+    title_matches = []
+    for kw in pos_titles:
+        kw_clean = kw.strip().lower()
+        if kw_clean and re.search(r'\b' + re.escape(kw_clean) + r'\b', title_lower):
+            title_matches.append(kw)
+
     if title_matches:
         pts = min(len(title_matches) * 12, w_title)
         score += pts
         reasons.append(f"Title match: {', '.join(title_matches[:6])}")
 
-    title_negatives = [kw for kw in neg_titles if kw in title_lower]
+    title_negatives = []
+    for kw in neg_titles:
+        kw_clean = kw.strip().lower()
+        if kw_clean and re.search(r'\b' + re.escape(kw_clean) + r'\b', title_lower):
+            title_negatives.append(kw)
+
     if title_negatives:
         penalty = len(title_negatives) * 15
         score -= penalty
         red_flags.append(f"Title contains: {', '.join(title_negatives[:4])}")
 
-    # Tech stack: split into core / secondary using profile-declared core_tech.
-    # Budget split: ~70% of tech weight for core, ~30% for secondary.
+    # Tech stack: regex word boundaries
     tech_found = extract_tech_stack(full_text, profile=profile)
-    core_tech = [t for t in tech_found if t in core_tech_list]
-    secondary_tech = [t for t in tech_found if t not in core_tech]
+    core_tech = [t for t in tech_found if t.lower() in core_tech_list]
+    secondary_tech = [t for t in tech_found if t.lower() not in core_tech_list]
 
     core_budget = max(0, int(round(w_tech * 0.71)))
     secondary_budget = max(0, w_tech - core_budget)
@@ -203,11 +210,9 @@ def score_job(title: str, description: str, location: str = "",
         score += min(len(secondary_tech) * 3, secondary_budget)
         reasons.append(f"Related tech: {', '.join(secondary_tech[:8])}")
 
-    # Experience: lookup via experience_bonuses[target][detected], scale by w_exp.
+    # Experience lookup
     exp_level = estimate_experience_level(full_text)
     row = exp_bonuses.get(exp_target) or {}
-    # Bonus table expresses preference as -15..+15. Scale by (w_exp / 15) so a
-    # profile can dial experience_weight up or down proportionally.
     raw_bonus = int(row.get(exp_level, 0))
     scaled_bonus = int(round(raw_bonus * (w_exp / 15.0)))
     if scaled_bonus > 0:
@@ -219,9 +224,13 @@ def score_job(title: str, description: str, location: str = "",
     else:
         reasons.append(f"Experience: {exp_level} (target={exp_target})")
 
-    # Domain signals (profile-defined — "backend_signals" key kept for
-    # migration; semantically means "positive domain keywords in description")
-    signal_matches = [s for s in signal_list if s in full_text]
+    # Domain signals with word boundaries
+    signal_matches = []
+    for s in signal_list:
+        s_clean = s.strip().lower()
+        if s_clean and re.search(r'\b' + re.escape(s_clean) + r'\b', full_text):
+            signal_matches.append(s)
+
     if signal_matches:
         score += min(len(signal_matches) * 4, w_signal)
         reasons.append(f"Signals: {', '.join(signal_matches[:5])}")

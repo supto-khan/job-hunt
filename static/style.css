@@ -1,23 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface2: #232733;
-    --border: #2e3345;
-    --text: #e1e4ed;
-    --text-muted: #8b8fa3;
-    --primary: #6c5ce7;
-    --primary-hover: #7c6df7;
-    --green: #00b894;
-    --yellow: #fdcb6e;
+    --bg: #0b1e16;
+    --surface: #14211b;
+    --surface2: #1c2b24;
+    --border: #28352f;
+    --text: #e1e8e4;
+    --text-muted: #9eaba4;
+    
+    /* Primary - Forest Green */
+    --primary-50: #e8f5ef;
+    --primary-100: #b8e0cb;
+    --primary-200: #7dc4a4;
+    --primary-400: #2e9e6b;
+    --primary: #1a7a4e;
+    --primary-hover: #0d5534;
+    --primary-900: #073822;
+
+    /* Secondary - Mint / Cyan */
+    --mint-50: #e0f7f2;
+    --mint-200: #8de8d4;
+    --mint: #34c9ac;
+    --mint-border: #0e9f84;
+    --mint-text: #066b58;
+
+    /* Accent - Warm Gold */
+    --gold-50: #fef9e7;
+    --gold-200: #fcd96a;
+    --gold: #f0a500;
+    --gold-dark: #b87600;
+
+    /* Semantic */
+    --green: #1a7a4e;
+    --yellow: #f0a500;
     --red: #e17055;
-    --blue: #74b9ff;
-    --radius: 8px;
+    --blue: #34c9ac;
+    --radius: 10px;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
@@ -46,12 +70,12 @@ body {
     max-height: 32px;
     flex-shrink: 0;
     border-radius: 8px;
-    box-shadow: 0 0 12px rgba(0, 242, 254, 0.35);
+    box-shadow: 0 0 12px rgba(52, 201, 172, 0.35);
 }
 .brand-logo h1 {
     font-size: 20px;
     font-weight: 700;
-    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    background: linear-gradient(135deg, #34c9ac 0%, #2e9e6b 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.3px;
@@ -120,20 +144,32 @@ body {
 /* ── Stats Bar ── */
 .stats-bar {
     display: flex;
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
     padding: 16px 32px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
+    max-width: 100%;
 }
 .stat-card {
     background: var(--surface2);
-    padding: 12px 20px;
+    padding: 10px 16px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
-    min-width: 140px;
+    flex: 1 1 130px;
+    min-width: 120px;
+    max-width: 200px;
 }
-.stat-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.stat-card .value { font-size: 24px; font-weight: 700; margin-top: 2px; }
+.stat-card .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.stat-card .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
 
 /* ── Filters ── */
 .filters {
@@ -252,11 +288,12 @@ body {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
     z-index: 1000;
     justify-content: center;
-    align-items: flex-start;
-    padding-top: 60px;
+    align-items: center;
+    padding: 20px;
 }
 .modal-overlay.active { display: flex; }
 .modal {

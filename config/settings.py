@@ -3,16 +3,27 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "jobs.db")
+# Database Settings (MySQL / MariaDB)
+MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_USER = os.getenv("MYSQL_USER", "root")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "job_hunter")
 
 # API Keys (optional for test version)
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "")
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
+
+# Notifications (Discord & Telegram)
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+NOTIFY_MIN_SCORE = int(os.getenv("NOTIFY_MIN_SCORE", "80"))
 
 # Email Settings (Gmail SMTP)
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")

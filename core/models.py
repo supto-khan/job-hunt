@@ -21,7 +21,8 @@ class Job(BaseModel):
     company_domain: str = ""
     salary: str = ""
     job_type: str = ""  # full-time/part-time/contract
-    india_friendly: str = "unknown"  # yes/no/maybe/unknown
+    bd_friendly: str = "unknown"  # yes/no/maybe/unknown
+    india_friendly: str = "unknown"  # backward compatibility alias
     location_note: str = ""  # explanation of location check
 
     @property
@@ -58,6 +59,7 @@ class Company(BaseModel):
     founded_year: int = 0
     employee_count: str = ""
     tags: str = ""
+    bd_friendly: str = "unknown"
     india_friendly: str = "unknown"
     last_crawled: str = ""
     crawl_status: str = "active"  # active/paused/failed

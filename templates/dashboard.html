@@ -6,7 +6,59 @@
     <title>Job Scraper Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="alternate icon" type="image/png" href="/static/favicon.png">
-    <link rel="stylesheet" href="/static/style.css?v=6">
+    
+    <!-- Fonts & Tailwind CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Lexend', 'sans-serif'],
+                    },
+                    colors: {
+                        forest: {
+                            50: '#e8f5ef',
+                            100: '#b8e0cb',
+                            200: '#7dc4a4',
+                            400: '#2e9e6b',
+                            600: '#1a7a4e',
+                            800: '#0d5534',
+                            900: '#073822',
+                        },
+                        mint: {
+                            50: '#e0f7f2',
+                            200: '#8de8d4',
+                            400: '#34c9ac',
+                            600: '#0e9f84',
+                            800: '#066b58',
+                        },
+                        gold: {
+                            50: '#fef9e7',
+                            200: '#fcd96a',
+                            500: '#f0a500',
+                            700: '#b87600',
+                        },
+                        dark: {
+                            bg: '#0b1e16',
+                            surface: '#14211b',
+                            surface2: '#1c2b24',
+                            border: '#28352f',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js & Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css?v=8">
 </head>
 <body>
     <!-- Header -->
@@ -24,9 +76,15 @@
         </div>
         <div class="header-actions">
             <span id="active-profile-indicator" style="font-size:12px;color:var(--text-muted);">Profile: …</span>
-            <span id="jsearch-status" style="font-size:12px;color:var(--text-muted);">JSearch: loading...</span>
             <button class="btn btn-outline" onclick="openQueriesModal()">Search Queries</button>
             <button id="btn-export" class="btn btn-green" onclick="openExportModal()">Export to Sheets</button>
+            <div id="collect-loader" class="collect-loader" hidden>
+                <div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>
+                <div class="collect-loader-text">
+                    <div class="collect-loader-title">Collecting jobs…</div>
+                    <div class="collect-loader-sub"><span id="collect-elapsed">0s</span> / est. <span id="collect-estimate">—</span></div>
+                </div>
+            </div>
             <button id="btn-collect" class="btn btn-primary" onclick="collectJobs()">Collect Jobs</button>
         </div>
     </div>
@@ -36,6 +94,38 @@
         <div class="stat-card">
             <div class="label">Total Jobs</div>
             <div class="value">-</div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Charts Grid -->
+    <div x-data="{ showAnalytics: true }" class="px-8 my-4">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-sm font-semibold text-mint-400 tracking-wide uppercase flex items-center gap-2">
+                <span>📊</span> Analytics & Match Insights
+            </h3>
+            <button @click="showAnalytics = !showAnalytics" class="text-xs text-forest-200 hover:text-white transition">
+                <span x-text="showAnalytics ? 'Collapse Charts ▲' : 'Expand Charts ▼'"></span>
+            </button>
+        </div>
+        <div x-show="showAnalytics" x-transition class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-lg">
+                <h4 class="text-xs font-medium text-gray-400 mb-3">Jobs Scraped by Source</h4>
+                <div class="relative h-48">
+                    <canvas id="chart-sources"></canvas>
+                </div>
+            </div>
+            <div class="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-lg">
+                <h4 class="text-xs font-medium text-gray-400 mb-3">Top Tech Stacks Found</h4>
+                <div class="relative h-48">
+                    <canvas id="chart-tech"></canvas>
+                </div>
+            </div>
+            <div class="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-lg">
+                <h4 class="text-xs font-medium text-gray-400 mb-3">Outreach Pipeline Funnel</h4>
+                <div class="relative h-48 flex justify-center items-center">
+                    <canvas id="chart-outreach"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -91,13 +181,6 @@
         <div class="filter-group" style="justify-content: flex-end;">
             <label>&nbsp;</label>
             <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
-        </div>
-        <div id="collect-loader" class="collect-loader" hidden>
-            <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
-            <div class="collect-loader-text">
-                <div class="collect-loader-title">Collecting jobs…</div>
-                <div class="collect-loader-sub"><span id="collect-elapsed">0s</span> / est. <span id="collect-estimate">—</span></div>
-            </div>
         </div>
     </div>
 
@@ -216,6 +299,16 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=6"></script>
+    <!-- Activity Notification Modal -->
+    <div class="modal-overlay" id="activity-modal-overlay" onclick="if(event.target===this)closeActivityModal()">
+        <div class="modal" id="activity-modal-content" style="width:420px;text-align:center;padding:28px 24px;">
+            <div id="activity-modal-icon" style="font-size:36px;margin-bottom:12px;">ℹ️</div>
+            <h3 id="activity-modal-title" style="font-size:18px;font-weight:600;margin-bottom:8px;color:var(--text);">System Notice</h3>
+            <p id="activity-modal-body" style="font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:20px;"></p>
+            <button class="btn btn-primary" onclick="closeActivityModal()" style="width:100%;">Got it</button>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=7"></script>
 </body>
 </html>

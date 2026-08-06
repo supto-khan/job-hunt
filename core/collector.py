@@ -18,6 +18,11 @@ from sources.greenhouse import GreenhouseSource
 from sources.lever import LeverSource
 from sources.ashby import AshbySource
 from sources.html_scraper import HTMLCareerSource
+from sources.hn_algolia import HackerNewsSource
+from sources.rss import RSSSource
+from sources.workable import WorkableSource
+from sources.recruitee import RecruiteeSource
+from sources.bamboohr import BambooHRSource
 from config.settings import RAPIDAPI_KEY
 
 # Days before a job not re-seen gets deleted (cleanup). Could be profile-driven
@@ -35,6 +40,8 @@ def _build_job_board_sources() -> list:
         RemotiveSource(),
         RemoteOKSource(),
         ArbeitnowSource(),
+        HackerNewsSource(),
+        RSSSource(),
     ]
     if RAPIDAPI_KEY:
         # Queries come from the active profile (single source of truth).
@@ -66,6 +73,12 @@ def _make_ats_source(company: dict):
         return LeverSource(company)
     elif platform == "ashby":
         return AshbySource(company)
+    elif platform == "workable":
+        return WorkableSource(company)
+    elif platform == "recruitee":
+        return RecruiteeSource(company)
+    elif platform == "bamboohr":
+        return BambooHRSource(company)
     elif platform == "html":
         return HTMLCareerSource(company)
     return None
@@ -119,6 +132,8 @@ def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
         result_status = insert_job(job_dict)
         if result_status == "new":
             stats["new"] += 1
+            if result["score"] >= 80:
+                stats.setdefault("new_high_matches", []).append(job_dict)
         else:
             stats["updated"] = stats.get("updated", 0) + 1
 
@@ -221,6 +236,15 @@ async def run_collection(include_companies: bool = True) -> dict:
     log(f"  Deleted {deleted} stale jobs")
 
     # Merge stats
+    new_high_matches = board_stats.get("new_high_matches", []) + company_stats.get("new_high_matches", [])
+    if new_high_matches:
+        try:
+            from core.notifications import send_instant_job_alerts
+            alerts_sent = send_instant_job_alerts(new_high_matches)
+            log(f"  Notifications: Sent {alerts_sent} instant alerts (Discord/Telegram)")
+        except Exception as e:
+            log(f"  Notifications Error: {e}")
+
     total = {
         "fetched": board_stats["fetched"] + company_stats["fetched"],
         "new": board_stats["new"] + company_stats["new"],

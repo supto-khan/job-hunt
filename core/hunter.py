@@ -52,8 +52,19 @@ def _safe_format(template: str, tokens: dict) -> str:
 
 def generate_dm_template(job: dict, contact: dict = None,
                         profile: dict = None) -> dict:
-    """Generate a short + long LinkedIn DM using the profile's templates."""
+    """Generate a short + long LinkedIn DM using AI (Gemini/Groq) or fallback templates."""
     profile = profile or get_active_profile()
+
+    # 1. Try AI-powered personalized message generation
+    try:
+        from core.llm import generate_ai_outreach_dm
+        ai_res = generate_ai_outreach_dm(job, profile)
+        if ai_res:
+            return {"short": ai_res["short"], "long": ai_res["long"]}
+    except Exception as e:
+        pass
+
+    # 2. Rule-based / template fallback if AI is unavailable or fails
     out_cfg = profile["outreach"]
 
     candidate_name = out_cfg.get("candidate_name") or "[Your Name]"

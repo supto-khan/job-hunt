@@ -1,0 +1,295 @@
+name: Full Stack Developer
+description: 'Full-stack Angular, React, and Laravel/PHP developer profile focused on high-performance multi-vendor ecommerce & SaaS products.'
+schema_version: 1
+search:
+  default_terms:
+  - Angular Developer
+  - Full Stack Developer
+  - Full-Stack Engineer
+  - Laravel Developer
+  - PHP Laravel Angular
+  - React Laravel Developer
+  - Backend Developer PHP
+  title_keywords_positive:
+  - Angular
+  - Laravel
+  - React
+  - Full Stack
+  - Fullstack
+  - Full-Stack
+  - PHP
+  - Software Engineer
+  - Web Developer
+  - Frontend
+  - Backend
+  title_keywords_negative:
+  - Intern
+  - Internship
+  - Junior
+  - Entry Level
+  - WordPress
+  - Unpaid
+  - Volunteer
+  - .NET
+  - Java
+  - iOS
+  - Android
+  - Ruby
+  - Rails
+  - Python
+  - Django
+  relevant_tech:
+  - Angular
+  - React
+  - Next.js
+  - Laravel
+  - PHP
+  - Node.js
+  - TypeScript
+  - JavaScript
+  - MySQL
+  - MariaDB
+  - PostgreSQL
+  - Redis
+  - REST API
+  - GraphQL
+  - Microservices
+  - Docker
+  - AWS
+  - DigitalOcean
+  - CI/CD
+  - Tailwind CSS
+  - SCSS
+  - Vue.js
+  - Stripe
+  - Swoole
+  - Octane
+  - Horizon
+  - Git
+  - Websockets
+  - Multi-vendor
+  - SaaS
+  jsearch_default_queries:
+  - query: Angular Developer
+    country: US
+    date_posted: month
+    remote_jobs_only: true
+  - query: Laravel Developer
+    country: US
+    date_posted: month
+    remote_jobs_only: true
+  - query: Full Stack Developer PHP
+    country: US
+    date_posted: month
+    remote_jobs_only: true
+  - query: React Laravel Developer
+    country: US
+    date_posted: month
+    remote_jobs_only: true
+  - query: Senior Full Stack Engineer
+    country: US
+    date_posted: month
+    remote_jobs_only: true
+  - query: Backend Developer Laravel
+    country: US
+    date_posted: month
+    remote_jobs_only: true
+scoring:
+  experience_target: mid
+  min_relevance_score: 70
+  min_score_to_store: 70
+  weights:
+    title: 35
+    tech: 40
+    experience: 15
+    signal: 10
+  core_tech:
+  - Angular
+  - Laravel
+  - React
+  - PHP
+  - TypeScript
+  - JavaScript
+  - MySQL
+  - Redis
+  backend_signals:
+  - api
+  - rest api
+  - microservices
+  - ecommerce
+  - multi-vendor
+  - saas
+  - dashboard
+  - admin panel
+  - payment integration
+  - webhook
+  - scalable
+  - architecture
+  - database optimization
+  - performance
+  - full-stack
+  - ui component
+  - responsive
+  - dashboard
+  - admin panel
+  - payment integration
+  - webhook
+  - scalable
+  - architecture
+  - database optimization
+  - performance
+  - full-stack
+  - ui component
+  - responsive
+  experience_bonuses:
+    fresher:
+      fresher: 15
+      junior: 10
+      mid: 0
+      senior: -5
+    junior:
+      fresher: 5
+      junior: 15
+      mid: 5
+      senior: -5
+    mid:
+      fresher: -10
+      junior: 0
+      mid: 15
+      senior: 10
+    senior:
+      fresher: -15
+      junior: -5
+      mid: 10
+      senior: 15
+    any:
+      fresher: 10
+      junior: 10
+      mid: 10
+      senior: 10
+location:
+  india_positive: []
+  india_negative: []
+  bd_positive:
+  - remote - worldwide
+  - remote anywhere
+  - work from anywhere
+  - global team
+  - async
+  - asynchronous
+  - no location restriction
+  - open to all locations
+  - international team
+  - distributed team
+  - remote-first
+  - contractor
+  - freelance
+  - independent contractor
+  - timezone flexible
+  bd_negative:
+  - US citizens only
+  - must be based in the US
+  - US work authorization required
+  - green card
+  - must reside in
+  - on-site
+  - hybrid
+  - relocation required
+  - must be located in EU
+  - EU citizenship required
+  - security clearance
+  - visa sponsorship not available
+  - local candidates only
+  - in-office
+  timezone_compatible:
+  - flexible hours
+  - async work
+  - PST hours
+  - EST hours
+  - core hours overlap 9am-5pm EST
+  - core hours overlap PST
+  - US business hours
+  - Eastern Time
+  - Pacific Time
+  - CET overlap
+  - GMT overlap
+  - work your own hours
+  - flexible schedule
+  timezone_incompatible:
+  - must overlap AEST
+  - must overlap JST core hours
+  - Australia business hours required
+outreach:
+  candidate_name: Supto Khan
+  candidate_core_tech:
+  - Angular
+  - Laravel
+  - React
+  - PHP
+  - TypeScript
+  candidate_extra_tech:
+  - MySQL
+  - MariaDB
+  - Redis
+  - Next.js
+  - Tailwind CSS
+  - REST API
+  - Docker
+  - DigitalOcean
+  - Octane
+  - Swoole
+  linkedin_search_titles:
+  - title: Technical Recruiter
+    label: ''
+    category: hr
+  - title: Talent Acquisition
+    label: ''
+    category: hr
+  - title: People Operations
+    label: ''
+    category: hr
+  - title: HR Manager
+    label: ''
+    category: hr
+  - title: Engineering Manager
+    label: ''
+    category: engineering
+  - title: Head of Engineering
+    label: ''
+    category: engineering
+  - title: Software Engineering Manager
+    label: ''
+    category: engineering
+  - title: Tech Lead
+    label: ''
+    category: engineering
+  - title: Staff Engineer
+    label: ''
+    category: engineering
+  - title: CTO
+    label: ''
+    category: executive
+  - title: VP Engineering
+    label: ''
+    category: executive
+  - title: Founder
+    label: ''
+    category: executive
+  - title: Co-Founder
+    label: ''
+    category: executive
+  - title: CEO
+    label: ''
+    category: executive
+  bio_short: Full-stack developer specializing in {stack}, with experience building scalable multi-vendor ecommerce platforms and SaaS products for production environments.
+  achievements:
+  - Built and optimized a multi-vendor ecommerce platform (Laravel + Octane/Swoole + Redis), cutting storefront load time from ~6s to ~1.7s
+  - Reduced a 33-second database query to sub-millisecond via composite indexing
+  - Designed a creator monetization SaaS platform with custom payment gateway integration and internal ledger system
+  - Founded and run Nexidiant, a digital agency delivering Angular/React/Laravel solutions for international clients
+  - 5+ years building production Angular, React, and Laravel applications end-to-end
+  dm_short_template: '{greeting} {candidate_name} here. Came across the {title} role at {company} — my background''s in {stack}, and {bio_short} Would love to connect if you''re open to it.'
+  dm_long_template: "{greeting} {candidate_name} here. I noticed {company} is hiring for {title}, and it looks like a strong fit for my background.\n\n{bio_short}\n\nA few things I've shipped recently:\n{achievements}\n\nHappy to share more or jump on a quick call if useful — open to overlapping with US/EU hours. Thanks for your time!\n\nBest,\n{candidate_name}"
+  email_digest_subject_role: developer
+  email_greeting: Good morning, Supto 👋
+  recipient_email: suptokhan25@gmail.com

@@ -175,4 +175,37 @@ async def detect_ats_platform(domain: str) -> dict:
         except Exception:
             pass
 
+        # Try Workable
+        try:
+            resp = await client.post(f"https://apply.workable.com/api/v3/accounts/{slug}/jobs", json={})
+            if resp.status_code == 200:
+                data = resp.json()
+                if "results" in data:
+                    results.update({"ats_platform": "workable", "ats_slug": slug})
+                    return results
+        except Exception:
+            pass
+
+        # Try Recruitee
+        try:
+            resp = await client.get(f"https://{slug}.recruitee.com/api/offers/")
+            if resp.status_code == 200:
+                data = resp.json()
+                if "offers" in data:
+                    results.update({"ats_platform": "recruitee", "ats_slug": slug})
+                    return results
+        except Exception:
+            pass
+
+        # Try BambooHR
+        try:
+            resp = await client.get(f"https://{slug}.bamboohr.com/careers/list", headers={"Accept": "application/json"})
+            if resp.status_code == 200:
+                data = resp.json()
+                if "result" in data or "jobs" in data:
+                    results.update({"ats_platform": "bamboohr", "ats_slug": slug})
+                    return results
+        except Exception:
+            pass
+
     return results

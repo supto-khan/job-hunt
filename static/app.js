@@ -143,6 +143,10 @@ function bdBadge(value, note) {
 }
 
 // ── Render ──
+let chartSourcesInstance = null;
+let chartTechInstance = null;
+let chartOutreachInstance = null;
+
 function renderStats() {
     const s = state.stats;
     const bdStats = s.by_bd || s.by_india || {};
@@ -174,6 +178,102 @@ function renderStats() {
             </div>
         `).join('')}
     `;
+
+    renderAnalyticsCharts(s);
+}
+
+function renderAnalyticsCharts(s) {
+    if (typeof Chart === 'undefined') return;
+
+    // 1. Sources Chart
+    const sourcesCanvas = document.getElementById('chart-sources');
+    if (sourcesCanvas && s.by_source) {
+        const labels = Object.keys(s.by_source);
+        const data = Object.values(s.by_source);
+        if (chartSourcesInstance) chartSourcesInstance.destroy();
+        chartSourcesInstance = new Chart(sourcesCanvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Jobs',
+                    data,
+                    backgroundColor: '#1a7a4e',
+                    borderColor: '#34c9ac',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { display: false } },
+                    y: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { color: '#28352f' } }
+                }
+            }
+        });
+    }
+
+    // 2. Tech Stack Chart
+    const techCanvas = document.getElementById('chart-tech');
+    if (techCanvas && s.top_tech) {
+        const labels = Object.keys(s.top_tech);
+        const data = Object.values(s.top_tech);
+        if (chartTechInstance) chartTechInstance.destroy();
+        chartTechInstance = new Chart(techCanvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Frequency',
+                    data,
+                    backgroundColor: '#34c9ac',
+                    borderColor: '#0e9f84',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { color: '#28352f' } },
+                    y: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 3. Outreach Pipeline Chart
+    const outreachCanvas = document.getElementById('chart-outreach');
+    if (outreachCanvas) {
+        const oStats = s.outreach_status || { pending: 0, emailed: 0, messaged: 0, replied: 0 };
+        const labels = ['Pending', 'Emailed', 'Messaged', 'Replied'];
+        const data = [oStats.pending || 0, oStats.emailed || 0, oStats.messaged || 0, oStats.replied || 0];
+        if (chartOutreachInstance) chartOutreachInstance.destroy();
+        chartOutreachInstance = new Chart(outreachCanvas, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    backgroundColor: ['#f0a500', '#34c9ac', '#1a7a4e', '#7dc4a4'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#9eaba4', font: { family: 'Lexend', size: 11 } } }
+                }
+            }
+        });
+    }
 }
 
 function renderSourceFilter() {
@@ -307,14 +407,28 @@ function formatDate(dateStr) {
     }
 }
 
-function showToast(msg) {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+function showActivityModal(title, message, icon = 'ℹ️') {
+    const overlay = document.getElementById('activity-modal-overlay');
+    if (!overlay) {
+        showToast(message);
+        return;
+    }
+    document.getElementById('activity-modal-icon').textContent = icon;
+    document.getElementById('activity-modal-title').textContent = title;
+    document.getElementById('activity-modal-body').textContent = message;
+    overlay.classList.add('active');
+}
+
+function closeActivityModal() {
+    const overlay = document.getElementById('activity-modal-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function showToast(msg, title = 'System Activity') {
+    let icon = '✅';
+    if (msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error')) icon = '⚠️';
+    else if (msg.toLowerCase().includes('complete') || msg.toLowerCase().includes('success')) icon = '🎉';
+    showActivityModal(title, msg, icon);
 }
 
 // ── Filter handlers ──
@@ -520,8 +634,35 @@ async function toggleQueryEnabled(qid, enabled) {
     showToast(enabled ? 'Query enabled' : 'Query disabled');
 }
 
+function confirmModal(title, message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('activity-modal-overlay');
+        if (!overlay) {
+            resolve(window.confirm(message));
+            return;
+        }
+        document.getElementById('activity-modal-title').textContent = title;
+        document.getElementById('activity-modal-body').textContent = message;
+
+        const btnOk = document.getElementById('confirm-btn-ok');
+        const btnCancel = document.getElementById('confirm-btn-cancel');
+
+        const cleanup = (res) => {
+            overlay.classList.remove('active');
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+            resolve(res);
+        };
+
+        btnOk.onclick = () => cleanup(true);
+        btnCancel.onclick = () => cleanup(false);
+        overlay.classList.add('active');
+    });
+}
+
 async function deleteQuery(qid) {
-    if (!confirm('Delete this query?')) return;
+    const confirmed = await confirmModal('Delete Query', 'Delete this search query?');
+    if (!confirmed) return;
     await api(`/search-queries/${qid}`, {method: 'DELETE'});
     showToast('Query deleted');
     await loadQueries();

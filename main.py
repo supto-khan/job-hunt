@@ -43,20 +43,16 @@ scheduler = AsyncIOScheduler(timezone=DAILY_EMAIL_TIMEZONE)
 async def startup():
     init_db()
 
-    # Schedule daily digest at configured hour and timezone. The sender is fixed to
-    # SENDER_EMAIL in .env — it has to match SENDER_APP_PASSWORD.
-    if SENDER_EMAIL:
-        scheduler.add_job(
-            run_daily_pipeline,
-            CronTrigger(hour=DAILY_EMAIL_HOUR, minute=0),
-            id="daily_digest",
-            replace_existing=True,
-            kwargs={"send": True},
-        )
-        scheduler.start()
-        print(f"Scheduled daily digest at {DAILY_EMAIL_HOUR}:00 ({DAILY_EMAIL_TIMEZONE})", flush=True)
-    else:
-        print("SENDER_EMAIL not set in .env — daily digest disabled", flush=True)
+    # Schedule daily job search & email digest at 10:00 AM BST (Asia/Dhaka)
+    scheduler.add_job(
+        run_daily_pipeline,
+        CronTrigger(hour=DAILY_EMAIL_HOUR, minute=0),
+        id="daily_digest",
+        replace_existing=True,
+        kwargs={"send": bool(SENDER_EMAIL)},
+    )
+    scheduler.start()
+    print(f"✅ Automated Daily Search & Pipeline scheduled for {DAILY_EMAIL_HOUR}:00 AM ({DAILY_EMAIL_TIMEZONE})", flush=True)
 
 
 @app.get("/favicon.ico")
@@ -90,7 +86,7 @@ async def api_get_jobs(
     jobs = get_jobs(
         source=source, status=status, min_score=min_score,
         search=search, location=location, tech=tech,
-        india_friendly=loc_filter, company_domain=company_domain,
+        bd_friendly=loc_filter, company_domain=company_domain,
         limit=limit, offset=offset,
     )
     return {"jobs": jobs, "count": len(jobs)}
@@ -497,15 +493,18 @@ async def api_jsearch_status():
     from core.database import get_api_usage
     import os
     usage = get_api_usage("jsearch")
+    month_usage = usage.get("month", 0) if isinstance(usage, dict) else 0
+    today_usage = usage.get("today", 0) if isinstance(usage, dict) else 0
+    total_usage = usage.get("total", 0) if isinstance(usage, dict) else 0
     # Free tier: 200 requests/month
     monthly_limit = 200
     return {
         "configured": bool(os.getenv("RAPIDAPI_KEY")),
-        "month": usage["month"],
-        "today": usage["today"],
-        "total": usage["total"],
+        "month": month_usage,
+        "today": today_usage,
+        "total": total_usage,
         "monthly_limit": monthly_limit,
-        "remaining": max(0, monthly_limit - usage["month"]),
+        "remaining": max(0, monthly_limit - month_usage),
     }
 
 

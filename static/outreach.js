@@ -82,9 +82,36 @@ function toggleSelectOne(id, checked) {
     updateBulkUI();
 }
 
+function confirmModal(title, message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('confirm-modal-overlay');
+        if (!overlay) {
+            resolve(window.confirm(message));
+            return;
+        }
+        document.getElementById('confirm-modal-title').textContent = title;
+        document.getElementById('confirm-modal-body').textContent = message;
+        
+        const btnOk = document.getElementById('confirm-btn-ok');
+        const btnCancel = document.getElementById('confirm-btn-cancel');
+
+        const cleanup = (res) => {
+            overlay.classList.remove('active');
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+            resolve(res);
+        };
+
+        btnOk.onclick = () => cleanup(true);
+        btnCancel.onclick = () => cleanup(false);
+        overlay.classList.add('active');
+    });
+}
+
 async function bulkDeleteSelected() {
     if (selectedIds.size === 0) { showToast('Nothing selected'); return; }
-    if (!confirm(`Delete ${selectedIds.size} outreach item(s)? This is not reversible.`)) return;
+    const confirmed = await confirmModal('Delete Selected', `Delete ${selectedIds.size} outreach item(s)? This is not reversible.`);
+    if (!confirmed) return;
     try {
         const data = await api('/outreach/bulk-delete', {
             method: 'POST',
@@ -111,71 +138,40 @@ async function loadStats() {
     `;
 }
 
-let _emailStatus = {};
 async function loadEmailStatus() {
-    const s = await api('/email/status');
-    _emailStatus = s;
-    const el = document.getElementById('email-status');
-    if (!s.sender_configured) {
-        el.textContent = '📧 Email: not configured';
-        el.style.color = 'var(--red)';
-    } else if (!s.recipient) {
-        el.textContent = '📧 Recipient not set';
-        el.style.color = 'var(--red)';
-    } else {
-        const tzName = (s.timezone === 'Asia/Dhaka' || s.timezone === 'Europe/London') ? 'BST' : (s.timezone || 'BST');
-        el.textContent = `📧 Daily ${s.scheduled_hour}:00 ${tzName} · ${s.sender} → ${s.recipient}`;
-        el.style.color = 'var(--text-muted)';
-    }
-}
-
-async function previewEmail() {
-    const btn = document.getElementById('btn-preview');
-    btn.disabled = true; btn.textContent = 'Checking...';
     try {
-        const data = await api('/email/send-now?dry_run=true', { method: 'POST' });
-        if (data.error) {
-            showToast(data.error);
-        } else if (data.items_count === 0 || data.sent === 0) {
-            showToast(data.message || 'No new items to email');
+        const s = await api('/email/status');
+        _emailStatus = s;
+        const el = document.getElementById('email-status');
+        if (!el) return;
+        if (!s.sender_configured) {
+            el.textContent = '📧 Email: not configured';
+            el.style.color = 'var(--red)';
+        } else if (!s.recipient) {
+            el.textContent = '📧 Recipient not set';
+            el.style.color = 'var(--red)';
         } else {
-            showToast(`Would send ${data.items_count} items: ${data.preview.map(p => p.company).join(', ')}`);
+            const tzName = (s.timezone === 'Asia/Dhaka' || s.timezone === 'Europe/London') ? 'BST' : (s.timezone || 'BST');
+            el.textContent = `📧 Daily ${s.scheduled_hour}:00 ${tzName} · ${s.sender} → ${s.recipient}`;
+            el.style.color = 'var(--text-muted)';
         }
-    } catch (e) { showToast('Failed: ' + e.message); }
-    finally { btn.disabled = false; btn.textContent = 'Preview Email'; }
-}
-
-async function sendEmailNow() {
-    const who = _emailStatus.candidate_name || 'the recipient';
-    const to = _emailStatus.recipient || '(recipient)';
-    if (!confirm(`Send the daily digest email now to ${who} (${to})?`)) return;
-    const btn = document.getElementById('btn-send');
-    btn.disabled = true; btn.textContent = 'Sending...';
-    try {
-        const data = await api('/email/send-now', { method: 'POST' });
-        if (data.error) {
-            showToast('Failed: ' + data.error);
-        } else if (data.sent) {
-            showToast(`✓ Sent ${data.sent} items to ${data.recipient}`);
-            await loadOutreach();
-        } else {
-            showToast((data.message || 'No items to send') + ' — click "Find Contacts for Top Jobs" to generate more.');
-        }
-    } catch (e) { showToast('Failed: ' + e.message); }
-    finally { btn.disabled = false; btn.textContent = 'Send Email Now'; }
+    } catch (e) {}
 }
 
 async function loadHunterStatus() {
-    const s = await api('/hunter/status');
-    const el = document.getElementById('hunter-status');
-    if (!s.configured) {
-        el.textContent = 'Hunter: not configured';
-        el.style.color = 'var(--red)';
-    } else if (s.error) {
-        el.textContent = `Hunter: ${s.error}`;
-    } else {
-        el.textContent = `Hunter: ${s.used}/${s.used + s.available} used (${s.plan})`;
-    }
+    try {
+        const s = await api('/hunter/status');
+        const el = document.getElementById('hunter-status');
+        if (!el) return;
+        if (!s.configured) {
+            el.textContent = 'Hunter: not configured';
+            el.style.color = 'var(--red)';
+        } else if (s.error) {
+            el.textContent = `Hunter: ${s.error}`;
+        } else {
+            el.textContent = `Hunter: ${s.used}/${s.used + s.available} used (${s.plan})`;
+        }
+    } catch (e) {}
 }
 
 function switchToNewTab() {
@@ -188,7 +184,8 @@ function switchToNewTab() {
 async function refreshOutreach() {
     // Collect fresh jobs from all sources, then generate 15 outreach items
     // scoped to what the collection returned.
-    if (!confirm('Run a fresh Collect Jobs and generate 15 new outreach items? Takes 1–3 minutes.')) return;
+    const confirmed = await confirmModal('Run Collection & Refresh', 'Run a fresh Collect Jobs and generate 15 new outreach items? Takes 1–3 minutes.');
+    if (!confirmed) return;
     const btn = document.getElementById('btn-refresh');
     btn.disabled = true;
     const original = btn.innerHTML;
@@ -216,16 +213,16 @@ async function syncOutreach() {
     try {
         const data = await api('/outreach/generate?min_score=40&limit=15&bd_friendly=maybe', { method: 'POST' });
         if (data.error) {
-            showToast(data.error);
+            showToast('Outreach Generation Notice: ' + data.error);
         } else if (data.generated === 0) {
-            showToast(data.message || 'No new jobs eligible for outreach — try Refresh to collect fresh jobs');
+            showToast(data.message || 'No un-synced high-scoring jobs available. Click "Refresh" to run a fresh job collection first.');
         } else {
-            showToast(`Generated ${data.generated} outreach items`);
+            showToast(`Successfully generated ${data.generated} new outreach items!`);
             switchToNewTab();
         }
         await Promise.all([loadOutreach(), loadStats(), loadHunterStatus()]);
     } catch (e) {
-        showToast('Sync failed: ' + e.message);
+        showToast('Outreach Sync Notice: All high-scoring jobs already have outreach generated. Try clicking "Refresh" to collect new jobs.', 'Outreach Activity');
     } finally {
         btn.disabled = false;
         btn.innerHTML = original;
@@ -351,14 +348,25 @@ function copyDM(id, variant) {
     navigator.clipboard.writeText(text).then(() => showToast(`${variant} DM copied!`));
 }
 
-function showToast(msg) {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
+function showActivityModal(title, message, icon = 'ℹ️') {
+    const overlay = document.getElementById('activity-modal-overlay');
+    if (!overlay) return;
+    document.getElementById('activity-modal-icon').textContent = icon;
+    document.getElementById('activity-modal-title').textContent = title;
+    document.getElementById('activity-modal-body').textContent = message;
+    overlay.classList.add('active');
+}
+
+function closeActivityModal() {
+    const overlay = document.getElementById('activity-modal-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function showToast(msg, title = 'Outreach Activity') {
+    let icon = '✅';
+    if (msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error')) icon = '⚠️';
+    else if (msg.toLowerCase().includes('copied') || msg.toLowerCase().includes('success')) icon = '📋';
+    showActivityModal(title, msg, icon);
 }
 
 async function loadActiveProfileIndicator() {

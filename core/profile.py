@@ -11,11 +11,10 @@ automatically on activate/update/delete.
 from __future__ import annotations
 
 import json
-import sqlite3
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from core.database import get_connection
 
@@ -58,8 +57,6 @@ def default_config() -> dict:
         "location": {
             "india_positive": [],
             "india_negative": [],
-            "bd_positive": [],
-            "bd_negative": [],
             "timezone_compatible": [],
             "timezone_incompatible": [],
         },
@@ -67,61 +64,34 @@ def default_config() -> dict:
             "candidate_name": "",
             "candidate_core_tech": [],
             "candidate_extra_tech": [],
-            "linkedin_search_titles": [
-                {"title": "Engineering Manager", "label": "Eng Manager", "category": "engineering"},
-                {"title": "Tech Lead", "label": "Tech Lead", "category": "engineering"},
-                {"title": "Head of Engineering", "label": "Head of Eng", "category": "engineering"},
-                {"title": "CTO", "label": "CTO", "category": "executive"},
-                {"title": "CEO Founder", "label": "CEO / Founder", "category": "executive"},
-                {"title": "Technical Recruiter", "label": "Tech Recruiter", "category": "hr"},
-                {"title": "HR Manager", "label": "HR Manager", "category": "hr"},
-            ],
             "bio_short": "",
             "achievements": [],
             "dm_short_template": "",
             "dm_long_template": "",
-            "email_digest_subject_role": "software",
-            "email_greeting": "Your Daily Job Digest",
-            # Sender address is not a profile setting — it is fixed to
-            # SENDER_EMAIL in .env so it always matches SENDER_APP_PASSWORD.
+            "linkedin_search_titles": [],
+            "email_digest_subject_role": "backend",
+            "email_greeting": "",
             "recipient_email": "",
         },
     }
 
 
-def validate_config(config: dict) -> dict:
-    """Deep-merge submitted config onto defaults so every expected key exists.
-    Enforces enum for experience_target. Leaves lists/strings as-is otherwise."""
+def validate_config(cfg: dict) -> dict:
+    """Merge incoming dict over default_config() recursively."""
     base = default_config()
-    merged = _deep_merge(base, config or {})
 
-    target = merged["scoring"].get("experience_target", "mid")
-    if target not in ("fresher", "junior", "mid", "senior", "any"):
-        merged["scoring"]["experience_target"] = "mid"
+    if not isinstance(cfg, dict):
+        return base
 
-    # Ensure weights are ints and non-negative
-    w = merged["scoring"].get("weights") or {}
-    for k in ("title", "tech", "experience", "signal"):
-        try:
-            w[k] = max(0, int(w.get(k, base["scoring"]["weights"][k])))
-        except (TypeError, ValueError):
-            w[k] = base["scoring"]["weights"][k]
-    merged["scoring"]["weights"] = w
+    for section_key in ("search", "scoring", "location", "outreach"):
+        if section_key in cfg and isinstance(cfg[section_key], dict):
+            base[section_key].update(cfg[section_key])
 
-    return merged
+    if "schema_version" in cfg:
+        base["schema_version"] = cfg["schema_version"]
 
+    return base
 
-def _deep_merge(base: dict, override: dict) -> dict:
-    out = dict(base)
-    for k, v in (override or {}).items():
-        if k in out and isinstance(out[k], dict) and isinstance(v, dict):
-            out[k] = _deep_merge(out[k], v)
-        else:
-            out[k] = v
-    return out
-
-
-# ── Cache ─────────────────────────────────────────────────────────────
 
 def invalidate_cache() -> None:
     with _CACHE_LOCK:
@@ -130,60 +100,53 @@ def invalidate_cache() -> None:
         _ACTIVE_CACHE["config"] = None
 
 
-def _cache_set(pid: int, name: str, config: dict) -> None:
-    with _CACHE_LOCK:
-        _ACTIVE_CACHE["id"] = pid
-        _ACTIVE_CACHE["name"] = name
-        _ACTIVE_CACHE["config"] = config
-
-
-# ── Public API ────────────────────────────────────────────────────────
-
 def get_active_profile() -> dict:
-    """Returns the full active profile config, cached. Always returns a
-    valid dict (falls back to default_config() if no profile is set)."""
+    """Return the active profile's expanded config dict."""
     with _CACHE_LOCK:
         if _ACTIVE_CACHE["config"] is not None:
-            cfg = dict(_ACTIVE_CACHE["config"])
-            cfg["_id"] = _ACTIVE_CACHE["id"]
-            cfg["_name"] = _ACTIVE_CACHE["name"]
-            return cfg
+            return _ACTIVE_CACHE["config"]
 
     pid = _read_active_profile_id()
     if pid is None:
+        ensure_first_run_seed()
+        pid = _read_active_profile_id()
+
+    if pid is None:
         cfg = default_config()
         cfg["_id"] = None
-        cfg["_name"] = "(none)"
+        cfg["_name"] = "Default (fallback)"
         return cfg
 
     row = _read_profile_row(pid)
     if not row:
         cfg = default_config()
-        cfg["_id"] = None
-        cfg["_name"] = "(none)"
+        cfg["_id"] = pid
+        cfg["_name"] = f"Missing profile #{pid}"
         return cfg
 
-    config = validate_config(json.loads(row["config_json"]))
-    _cache_set(row["id"], row["name"], config)
-    out = dict(config)
-    out["_id"] = row["id"]
-    out["_name"] = row["name"]
-    return out
+    raw_cfg = json.loads(row["config_json"])
+    config = validate_config(raw_cfg)
+    config["_id"] = row["id"]
+    config["_name"] = row["name"]
+
+    with _CACHE_LOCK:
+        _ACTIVE_CACHE["id"] = row["id"]
+        _ACTIVE_CACHE["name"] = row["name"]
+        _ACTIVE_CACHE["config"] = config
+
+    return config
 
 
 def list_profiles() -> list[dict]:
-    """Return summary rows (no config blob) + is_active flag."""
     active_id = _read_active_profile_id()
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT id, name, description, source, created_at, updated_at "
-        "FROM profiles ORDER BY id"
-    ).fetchall()
-    conn.close()
-    return [
-        {**dict(r), "is_active": (r["id"] == active_id)}
-        for r in rows
-    ]
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, name, description, source, created_at, updated_at FROM profiles ORDER BY id")
+            rows = cur.fetchall()
+            return [{**dict(r), "is_active": (r["id"] == active_id)} for r in rows]
+    finally:
+        conn.close()
 
 
 def get_profile(pid: int) -> Optional[dict]:
@@ -201,49 +164,46 @@ def get_profile(pid: int) -> Optional[dict]:
     }
 
 
-def create_profile(name: str, config: dict, description: str = "",
-                   source: str = "custom") -> int:
+def create_profile(name: str, config: dict, description: str = "", source: str = "custom") -> int:
     ts = datetime.utcnow().isoformat()
     cfg = validate_config(config)
     conn = get_connection()
     try:
-        cur = conn.execute(
-            "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (name, description, json.dumps(cfg), ts, ts, source),
-        )
-        conn.commit()
-        return cur.lastrowid
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                (name, description, json.dumps(cfg), ts, ts, source),
+            )
+            return cur.lastrowid
     finally:
         conn.close()
 
 
-def update_profile(pid: int, config: dict = None, name: str = None,
-                   description: str = None) -> None:
+def update_profile(pid: int, config: dict = None, name: str = None, description: str = None) -> None:
     conn = get_connection()
     try:
         updates = []
         params: list = []
         if config is not None:
-            updates.append("config_json = ?")
+            updates.append("config_json = %s")
             params.append(json.dumps(validate_config(config)))
         if name is not None:
-            updates.append("name = ?")
+            updates.append("name = %s")
             params.append(name)
         if description is not None:
-            updates.append("description = ?")
+            updates.append("description = %s")
             params.append(description)
         if not updates:
             return
-        updates.append("updated_at = ?")
+        updates.append("updated_at = %s")
         params.append(datetime.utcnow().isoformat())
         params.append(pid)
-        conn.execute(f"UPDATE profiles SET {', '.join(updates)} WHERE id = ?", params)
-        conn.commit()
+        with conn.cursor() as cur:
+            cur.execute(f"UPDATE profiles SET {', '.join(updates)} WHERE id = %s", params)
     finally:
         conn.close()
 
-    # If the edited profile is active, drop cache so next read reflects changes.
     if _read_active_profile_id() == pid:
         invalidate_cache()
 
@@ -255,12 +215,13 @@ def activate_profile(pid: int) -> None:
     conn = get_connection()
     try:
         ts = datetime.utcnow().isoformat()
-        conn.execute(
-            "INSERT OR REPLACE INTO app_settings (key, value, updated_at) "
-            "VALUES ('active_profile_id', ?, ?)",
-            (str(pid), ts),
-        )
-        conn.commit()
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO app_settings (`key`, `value`, updated_at) "
+                "VALUES ('active_profile_id', %s, %s) "
+                "ON DUPLICATE KEY UPDATE `value`=VALUES(`value`), updated_at=VALUES(updated_at)",
+                (str(pid), ts),
+            )
     finally:
         conn.close()
     invalidate_cache()
@@ -271,8 +232,8 @@ def delete_profile(pid: int) -> None:
         raise ValueError("Cannot delete the active profile. Activate another first.")
     conn = get_connection()
     try:
-        conn.execute("DELETE FROM profiles WHERE id = ?", (pid,))
-        conn.commit()
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM profiles WHERE id = %s", (pid,))
     finally:
         conn.close()
 
@@ -293,7 +254,6 @@ def duplicate_profile(pid: int, new_name: str = None) -> int:
 # ── Preset import / export ────────────────────────────────────────────
 
 def list_presets() -> list[dict]:
-    """Scan the profiles/ directory for .yaml files."""
     if not PROFILES_DIR.exists():
         return []
     presets = []
@@ -318,14 +278,7 @@ def _read_preset_meta(path: Path) -> Optional[dict]:
     }
 
 
-def import_preset(slug: str, activate: bool = False,
-                  overwrite: bool = False) -> int:
-    """Load profiles/<slug>.yaml into the profiles table.
-
-    If a profile with the same name already exists:
-      - overwrite=True  → update that row
-      - overwrite=False → create a new row with " (imported at ...)" suffix
-    """
+def import_preset(slug: str, activate: bool = False, overwrite: bool = False) -> int:
     import yaml
     path = PROFILES_DIR / f"{slug}.yaml"
     if not path.exists():
@@ -340,33 +293,32 @@ def import_preset(slug: str, activate: bool = False,
 
     conn = get_connection()
     try:
-        existing = conn.execute(
-            "SELECT id FROM profiles WHERE name = ?", (name,)
-        ).fetchone()
-        ts = datetime.utcnow().isoformat()
-        if existing and overwrite:
-            pid = existing["id"]
-            conn.execute(
-                "UPDATE profiles SET description = ?, config_json = ?, "
-                "updated_at = ?, source = ? WHERE id = ?",
-                (description, json.dumps(cfg), ts, f"preset:{slug}", pid),
-            )
-        elif existing:
-            name = f"{name} (imported {ts[:10]})"
-            cur = conn.execute(
-                "INSERT INTO profiles (name, description, config_json, "
-                "created_at, updated_at, source) VALUES (?, ?, ?, ?, ?, ?)",
-                (name, description, json.dumps(cfg), ts, ts, f"preset:{slug}"),
-            )
-            pid = cur.lastrowid
-        else:
-            cur = conn.execute(
-                "INSERT INTO profiles (name, description, config_json, "
-                "created_at, updated_at, source) VALUES (?, ?, ?, ?, ?, ?)",
-                (name, description, json.dumps(cfg), ts, ts, f"preset:{slug}"),
-            )
-            pid = cur.lastrowid
-        conn.commit()
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM profiles WHERE name = %s", (name,))
+            existing = cur.fetchone()
+            ts = datetime.utcnow().isoformat()
+            if existing and overwrite:
+                pid = existing["id"]
+                cur.execute(
+                    "UPDATE profiles SET description = %s, config_json = %s, "
+                    "updated_at = %s, source = %s WHERE id = %s",
+                    (description, json.dumps(cfg), ts, f"preset:{slug}", pid),
+                )
+            elif existing:
+                name = f"{name} (imported {ts[:10]})"
+                cur.execute(
+                    "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
+                    "VALUES (%s, %s, %s, %s, %s, %s)",
+                    (name, description, json.dumps(cfg), ts, ts, f"preset:{slug}"),
+                )
+                pid = cur.lastrowid
+            else:
+                cur.execute(
+                    "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
+                    "VALUES (%s, %s, %s, %s, %s, %s)",
+                    (name, description, json.dumps(cfg), ts, ts, f"preset:{slug}"),
+                )
+                pid = cur.lastrowid
     finally:
         conn.close()
 
@@ -376,7 +328,6 @@ def import_preset(slug: str, activate: bool = False,
 
 
 def export_profile(pid: int) -> str:
-    """Serialize a profile back to YAML."""
     import yaml
     row = _read_profile_row(pid)
     if not row:
@@ -390,26 +341,14 @@ def export_profile(pid: int) -> str:
     return yaml.safe_dump(out, sort_keys=False, allow_unicode=True, width=100)
 
 
-# ── Search-query seeding (on preset import) ──────────────────────────
-
 def seed_search_queries_from_profile(pid: int, replace: bool = False) -> int:
-    """Push a profile's jsearch_default_queries into the search_queries table.
-
-    replace=True  → wipe existing search_queries first
-    replace=False → append; skip exact duplicates (by query text + country)
-    Returns count added.
-    """
-    from core.database import (
-        get_search_queries, add_search_query, delete_search_query,
-    )
+    from core.database import get_search_queries, add_search_query, delete_search_query
     row = _read_profile_row(pid)
     if not row:
         return 0
     config = validate_config(json.loads(row["config_json"]))
     queries = config["search"].get("jsearch_default_queries") or []
 
-    # In replace mode, wipe before checking queries — switching to a profile
-    # with no queries should clear the old ones, not leak them.
     if replace:
         existing = get_search_queries()
         for q in existing:
@@ -426,9 +365,7 @@ def seed_search_queries_from_profile(pid: int, replace: bool = False) -> int:
     added = 0
     for q in queries:
         key = (str(q.get("query", "")).strip().lower(), q.get("country", "BD"))
-        if not key[0]:
-            continue
-        if key in existing_keys:
+        if not key[0] or key in existing_keys:
             continue
         add_search_query(
             query=q.get("query", ""),
@@ -440,33 +377,17 @@ def seed_search_queries_from_profile(pid: int, replace: bool = False) -> int:
     return added
 
 
-# ── Legacy seed (first-run migration) ────────────────────────────────
-
 def _legacy_profile_from_settings() -> dict:
-    """Build a config dict from the pre-profile hardcoded constants.
-    Called once on first run when `profiles` table is empty."""
     from config import settings as s
-
     cfg = default_config()
+
     cfg["search"]["default_terms"] = list(getattr(s, "DEFAULT_SEARCH_TERMS", []))
     cfg["search"]["title_keywords_positive"] = list(getattr(s, "TITLE_KEYWORDS_POSITIVE", []))
     cfg["search"]["title_keywords_negative"] = list(getattr(s, "TITLE_KEYWORDS_NEGATIVE", []))
     cfg["search"]["relevant_tech"] = list(getattr(s, "RELEVANT_TECH", []))
-    cfg["search"]["jsearch_default_queries"] = [
-        {"query": "python django backend developer", "country": "BD", "date_posted": "3days", "remote_jobs_only": False},
-        {"query": "python backend engineer", "country": "BD", "date_posted": "3days", "remote_jobs_only": False},
-        {"query": "django developer", "country": "BD", "date_posted": "3days", "remote_jobs_only": False},
-        {"query": "fastapi developer", "country": "BD", "date_posted": "week", "remote_jobs_only": False},
-        {"query": "python backend remote", "country": "BD", "date_posted": "week", "remote_jobs_only": True},
-        {"query": "backend engineer python", "country": "US", "date_posted": "week", "remote_jobs_only": True},
-    ]
 
-    pos_list = list(getattr(s, "LOCATION_BD_POSITIVE", getattr(s, "LOCATION_INDIA_POSITIVE", [])))
-    neg_list = list(getattr(s, "LOCATION_BD_NEGATIVE", getattr(s, "LOCATION_INDIA_NEGATIVE", [])))
-    cfg["location"]["india_positive"] = pos_list
-    cfg["location"]["india_negative"] = neg_list
-    cfg["location"]["bd_positive"] = pos_list
-    cfg["location"]["bd_negative"] = neg_list
+    cfg["location"]["india_positive"] = list(getattr(s, "LOCATION_BD_POSITIVE", []))
+    cfg["location"]["india_negative"] = list(getattr(s, "LOCATION_BD_NEGATIVE", []))
     cfg["location"]["timezone_compatible"] = list(getattr(s, "TIMEZONE_COMPATIBLE", []))
     cfg["location"]["timezone_incompatible"] = list(getattr(s, "TIMEZONE_INCOMPATIBLE", []))
 
@@ -507,80 +428,61 @@ def _legacy_profile_from_settings() -> dict:
 
 
 def ensure_first_run_seed() -> Optional[int]:
-    """Idempotent: if profiles table is empty, seed the legacy profile and
-    set it active. Returns the new profile id, or None if not needed."""
     conn = get_connection()
     try:
-        count = conn.execute("SELECT COUNT(*) FROM profiles").fetchone()[0]
-        if count > 0:
-            return None
-        ts = datetime.utcnow().isoformat()
-        cfg = _legacy_profile_from_settings()
-        cur = conn.execute(
-            "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
-            "VALUES (?, ?, ?, ?, ?, 'legacy')",
-            ("Backend Python (legacy)",
-             "Seeded from pre-profile hardcoded settings. Edit or switch to another preset.",
-             json.dumps(cfg), ts, ts),
-        )
-        pid = cur.lastrowid
-        conn.execute(
-            "INSERT OR REPLACE INTO app_settings (key, value, updated_at) "
-            "VALUES ('active_profile_id', ?, ?)",
-            (str(pid), ts),
-        )
-        conn.commit()
-        return pid
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS c FROM profiles")
+            row = cur.fetchone()
+            if row and row["c"] > 0:
+                return None
+            ts = datetime.utcnow().isoformat()
+            cfg = _legacy_profile_from_settings()
+            cur.execute(
+                "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
+                "VALUES (%s, %s, %s, %s, %s, 'legacy')",
+                ("Backend Python (legacy)",
+                 "Seeded from pre-profile hardcoded settings. Edit or switch to another preset.",
+                 json.dumps(cfg), ts, ts),
+            )
+            pid = cur.lastrowid
+            cur.execute(
+                "INSERT INTO app_settings (`key`, `value`, updated_at) "
+                "VALUES ('active_profile_id', %s, %s) "
+                "ON DUPLICATE KEY UPDATE `value`=VALUES(`value`), updated_at=VALUES(updated_at)",
+                (str(pid), ts),
+            )
+            return pid
     finally:
         conn.close()
 
-
-# ── Private helpers ───────────────────────────────────────────────────
 
 def _read_active_profile_id() -> Optional[int]:
     conn = get_connection()
     try:
-        row = conn.execute(
-            "SELECT value FROM app_settings WHERE key = 'active_profile_id'"
-        ).fetchone()
-    except sqlite3.OperationalError:
+        with conn.cursor() as cur:
+            cur.execute("SELECT `value` FROM app_settings WHERE `key` = 'active_profile_id'")
+            row = cur.fetchone()
+            if not row:
+                return None
+            return int(row["value"])
+    except Exception:
         return None
     finally:
         conn.close()
-    if not row:
-        return None
-    try:
-        return int(row["value"])
-    except (TypeError, ValueError):
-        return None
 
 
-def _read_profile_row(pid: int) -> Optional[sqlite3.Row]:
+def _read_profile_row(pid: int) -> Optional[dict]:
     conn = get_connection()
     try:
-        return conn.execute(
-            "SELECT * FROM profiles WHERE id = ?", (pid,)
-        ).fetchone()
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM profiles WHERE id = %s", (pid,))
+            return cur.fetchone()
     finally:
         conn.close()
-
-
-# ── JSearch-query CRUD against the active profile ─────────────────────
-
-def _load_active_profile_config() -> tuple[Optional[int], dict]:
-    pid = _read_active_profile_id()
-    if pid is None:
-        return None, default_config()
-    row = _read_profile_row(pid)
-    if not row:
-        return None, default_config()
-    return pid, validate_config(json.loads(row["config_json"]))
 
 
 def get_active_profile_queries() -> list[dict]:
-    """Return the active profile's jsearch queries with synthetic ids and
-    an enabled flag (defaults to True). Empty list if no active profile."""
-    _, cfg = _load_active_profile_config()
+    cfg = get_active_profile()
     raw = (cfg.get("search") or {}).get("jsearch_default_queries") or []
     out = []
     for idx, q in enumerate(raw):
@@ -595,12 +497,9 @@ def get_active_profile_queries() -> list[dict]:
     return out
 
 
-def add_active_profile_query(query: str, country: str = "BD",
-                             date_posted: str = "3days",
-                             remote_jobs_only: bool = False) -> int:
-    """Append a query to the active profile. Returns its new index.
-    Raises ValueError if no active profile."""
-    pid, cfg = _load_active_profile_config()
+def add_active_profile_query(query: str, country: str = "BD", date_posted: str = "3days", remote_jobs_only: bool = False) -> int:
+    cfg = get_active_profile()
+    pid = cfg.get("_id")
     if pid is None:
         raise ValueError("No active profile")
     queries = list((cfg.get("search") or {}).get("jsearch_default_queries") or [])
@@ -612,12 +511,14 @@ def add_active_profile_query(query: str, country: str = "BD",
         "enabled": True,
     })
     cfg["search"]["jsearch_default_queries"] = queries
-    update_profile(pid, config=cfg)
+    clean_cfg = {k: v for k, v in cfg.items() if not k.startswith("_")}
+    update_profile(pid, config=clean_cfg)
     return len(queries) - 1
 
 
 def update_active_profile_query(qid: int, **fields) -> None:
-    pid, cfg = _load_active_profile_config()
+    cfg = get_active_profile()
+    pid = cfg.get("_id")
     if pid is None:
         raise ValueError("No active profile")
     queries = list((cfg.get("search") or {}).get("jsearch_default_queries") or [])
@@ -628,11 +529,13 @@ def update_active_profile_query(qid: int, **fields) -> None:
         if k in allowed and v is not None:
             queries[qid][k] = v
     cfg["search"]["jsearch_default_queries"] = queries
-    update_profile(pid, config=cfg)
+    clean_cfg = {k: v for k, v in cfg.items() if not k.startswith("_")}
+    update_profile(pid, config=clean_cfg)
 
 
 def delete_active_profile_query(qid: int) -> None:
-    pid, cfg = _load_active_profile_config()
+    cfg = get_active_profile()
+    pid = cfg.get("_id")
     if pid is None:
         raise ValueError("No active profile")
     queries = list((cfg.get("search") or {}).get("jsearch_default_queries") or [])
@@ -640,4 +543,5 @@ def delete_active_profile_query(qid: int) -> None:
         raise ValueError(f"Query index {qid} out of range")
     queries.pop(qid)
     cfg["search"]["jsearch_default_queries"] = queries
-    update_profile(pid, config=cfg)
+    clean_cfg = {k: v for k, v in cfg.items() if not k.startswith("_")}
+    update_profile(pid, config=clean_cfg)

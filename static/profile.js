@@ -27,13 +27,30 @@ async function api(path, opts = {}) {
     return ct.includes('application/json') ? resp.json() : resp.text();
 }
 
+function showActivityModal(title, message, icon = 'ℹ️') {
+    const overlay = document.getElementById('activity-modal-overlay');
+    if (!overlay) return;
+    document.getElementById('activity-modal-icon').textContent = icon;
+    document.getElementById('activity-modal-title').textContent = title;
+    document.getElementById('activity-modal-body').textContent = message;
+    overlay.classList.add('active');
+}
+
+function closeActivityModal() {
+    const overlay = document.getElementById('activity-modal-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
 function showToast(msg, variant = 'ok') {
-    const el = document.createElement('div');
-    el.className = 'toast';
-    if (variant === 'err') { el.style.borderColor = 'var(--red)'; el.style.color = 'var(--red)'; }
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 3500);
+    let title = 'Profile Activity';
+    let icon = '✅';
+    if (variant === 'err' || msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error')) {
+        title = 'System Notice';
+        icon = '⚠️';
+    } else if (msg.toLowerCase().includes('activated') || msg.toLowerCase().includes('saved')) {
+        icon = '🎉';
+    }
+    showActivityModal(title, msg, icon);
 }
 
 // ── Boot ──────────────────────────────────────────────────────
@@ -332,9 +349,36 @@ async function saveProfile(activate) {
     }
 }
 
+function confirmModal(title, message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('activity-modal-overlay');
+        if (!overlay) {
+            resolve(window.confirm(message));
+            return;
+        }
+        document.getElementById('activity-modal-title').textContent = title;
+        document.getElementById('activity-modal-body').textContent = message;
+
+        const btnOk = document.getElementById('confirm-btn-ok');
+        const btnCancel = document.getElementById('confirm-btn-cancel');
+
+        const cleanup = (res) => {
+            overlay.classList.remove('active');
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+            resolve(res);
+        };
+
+        btnOk.onclick = () => cleanup(true);
+        btnCancel.onclick = () => cleanup(false);
+        overlay.classList.add('active');
+    });
+}
+
 async function deleteActiveProfile() {
     if (state.currentId == null) return;
-    if (!confirm(`Delete profile "${state.profileMeta.name}"? This is not reversible.`)) return;
+    const confirmed = await confirmModal('Delete Profile', `Delete profile "${state.profileMeta.name}"? This is not reversible.`);
+    if (!confirmed) return;
     try {
         await api(`/profiles/${state.currentId}`, { method: 'DELETE' });
         showToast('Deleted');
@@ -377,7 +421,7 @@ async function createBlankProfile() {
 }
 
 async function importPresetFlow(slug) {
-    const activate = confirm(`Import preset "${slug}" and activate immediately?\n\n[OK] = activate (JSearch queries will be replaced)\n[Cancel] = import only (without activating)`);
+    const activate = await confirmModal('Import Preset', `Import preset "${slug}" and activate immediately? (JSearch queries will be synced)`);
     try {
         const res = await api('/profiles/import', {
             method: 'POST',
@@ -393,7 +437,8 @@ async function importPresetFlow(slug) {
 }
 
 async function rescoreAll(deleteBelowMin) {
-    if (!confirm('Re-score all jobs against the active profile?')) return;
+    const confirmed = await confirmModal('Re-score All Jobs', 'Re-score all jobs against the active profile?');
+    if (!confirmed) return;
     try {
         const qs = deleteBelowMin ? '?delete_below_min=true' : '';
         const res = await api(`/profiles/rescore-all${qs}`, { method: 'POST' });
