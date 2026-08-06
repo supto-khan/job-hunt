@@ -120,7 +120,7 @@ async def api_sources():
     return {"sources": get_sources()}
 
 
-@app.post("/api/collect")
+@app.post("/api/job-sync")
 async def api_collect(generate_outreach: bool = Query(True)):
     from datetime import datetime
     cutoff = datetime.utcnow().isoformat()

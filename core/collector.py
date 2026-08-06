@@ -85,6 +85,8 @@ async def _fetch_from_source(source) -> list[Job]:
 def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
     """Score, filter, deduplicate, and store jobs. Shared by both tracks."""
     stats.setdefault("filtered_out", 0)
+    stats.setdefault("new", 0)
+    stats.setdefault("updated", 0)
     profile = profile or get_active_profile()
     profile_id = profile.get("_id")
     min_store = int((profile.get("scoring") or {}).get("min_score_to_store", 25))

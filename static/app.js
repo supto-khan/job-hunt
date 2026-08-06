@@ -59,7 +59,7 @@ async function collectJobs() {
     const tick = setInterval(() => updateCollectLoader(startMs, estimateSec), 500);
 
     try {
-        const stats = await api('/collect', { method: 'POST' });
+        const stats = await api('/job-sync', { method: 'POST' });
         const newCount = stats.new ?? 0;
         const outCount = stats.outreach_generated ?? 0;
         showToast(`Collection complete — ${newCount} new jobs, ${outCount} outreach items ready to email`);
