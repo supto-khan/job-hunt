@@ -134,6 +134,40 @@ let chartOutreachInstance = null;
 
 function renderStats() {
     const s = state.stats;
+    const byStatus = s.by_status || {};
+
+    // Status display config with colors/labels
+    const statusMap = [
+        { key: 'new', label: 'New Jobs', color: 'var(--accent-green, #34c9ac)' },
+        { key: 'applied', label: 'Applied', color: '#60a5fa' },
+        { key: 'archive', label: 'Archived', color: '#6b7280' },
+    ];
+
+    let statusCardsHtml = statusMap
+        .filter(st => (byStatus[st.key] || 0) > 0)
+        .map(st => `
+        <div class="stat-card">
+            <div class="label" style="display:flex;align-items:center;gap:6px;">
+                <span style="width:8px;height:8px;border-radius:50%;background-color:${st.color};display:inline-block;"></span>
+                ${st.label}
+            </div>
+            <div class="value">${byStatus[st.key]}</div>
+        </div>
+    `).join('');
+
+    // Also handle any dynamic custom status not in statusMap (only if count > 0)
+    Object.keys(byStatus).forEach(key => {
+        if (!statusMap.some(st => st.key === key) && byStatus[key] > 0) {
+            const formattedLabel = key.charAt(0).toUpperCase() + key.slice(1);
+            statusCardsHtml += `
+                <div class="stat-card">
+                    <div class="label">${formattedLabel}</div>
+                    <div class="value">${byStatus[key]}</div>
+                </div>
+            `;
+        }
+    });
+
     document.getElementById('stats-bar').innerHTML = `
         <div class="stat-card">
             <div class="label">Total Jobs</div>
@@ -143,6 +177,7 @@ function renderStats() {
             <div class="label">Avg Score</div>
             <div class="value">${s.avg_score || 0}</div>
         </div>
+        ${statusCardsHtml}
     `;
 
     renderAnalyticsCharts(s);
@@ -217,28 +252,46 @@ function renderAnalyticsCharts(s) {
     // 3. Outreach Pipeline Chart
     const outreachCanvas = document.getElementById('chart-outreach');
     if (outreachCanvas) {
-        const oStats = s.outreach_status || { pending: 0, emailed: 0, messaged: 0, replied: 0 };
-        const labels = ['Pending', 'Emailed', 'Messaged', 'Replied'];
-        const data = [oStats.pending || 0, oStats.emailed || 0, oStats.messaged || 0, oStats.replied || 0];
+        const oStats = s.outreach_status || {};
+        const keys = Object.keys(oStats);
+        const hasData = keys.length > 0 && Object.values(oStats).some(val => val > 0);
+
         if (chartOutreachInstance) chartOutreachInstance.destroy();
-        chartOutreachInstance = new Chart(outreachCanvas, {
-            type: 'doughnut',
-            data: {
-                labels,
-                datasets: [{
-                    data,
-                    backgroundColor: ['#f0a500', '#34c9ac', '#1a7a4e', '#7dc4a4'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { color: '#9eaba4', font: { family: 'Lexend', size: 11 } } }
+
+        if (!hasData) {
+            // Draw empty state message on canvas
+            const ctx = outreachCanvas.getContext('2d');
+            ctx.clearRect(0, 0, outreachCanvas.width, outreachCanvas.height);
+            ctx.font = '12px Lexend, sans-serif';
+            ctx.fillStyle = '#9eaba4';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('No outreach items generated yet', outreachCanvas.width / 2 || 120, outreachCanvas.height / 2 || 80);
+        } else {
+            const labels = keys.map(k => k.charAt(0).toUpperCase() + k.slice(1));
+            const data = Object.values(oStats);
+            const palette = ['#34c9ac', '#f0a500', '#1a7a4e', '#60a5fa', '#7dc4a4', '#ef4444'];
+            const backgroundColor = labels.map((_, idx) => palette[idx % palette.length]);
+
+            chartOutreachInstance = new Chart(outreachCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#9eaba4', font: { family: 'Lexend', size: 11 } } }
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 }
 
