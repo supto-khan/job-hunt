@@ -66,8 +66,8 @@ def _render_card(i: int, item: dict) -> str:
     bd_color = {"yes": "#00b894", "maybe": "#fdcb6e", "no": "#e17055"}.get(india, "#8b8fa3")
 
     # Group searches by category for nicer layout
-    colors = {"engineering": "#0a66c2", "executive": "#6c5ce7", "hr": "#00b894"}
-    labels = {"engineering": "Engineering", "executive": "C-Level", "hr": "HR / Recruiters"}
+    colors = {"engineering": "#0a66c2", "executive": "#6c5ce7", "hr": "#00b894", "direct": "#d63031"}
+    labels = {"engineering": "Engineering", "executive": "C-Level", "hr": "HR / Recruiters", "direct": "Direct Contacts Found"}
 
     grouped = {}
     for s in searches:
@@ -75,7 +75,7 @@ def _render_card(i: int, item: dict) -> str:
         grouped.setdefault(cat, []).append(s)
 
     search_buttons = ""
-    for cat in ["engineering", "executive", "hr"]:
+    for cat in ["direct", "engineering", "executive", "hr"]:
         if cat not in grouped:
             continue
         group_buttons = "".join([
@@ -275,7 +275,8 @@ def send_daily_digest(limit: int = None, dry_run: bool = False) -> dict:
 
 
 def generate_outreach_for_top_jobs(limit: int = 15, min_score: int = 40,
-                                   india_friendly: str = "maybe",
+                                   bd_friendly: str = "maybe",
+                                   india_friendly: str = None,
                                    seen_after: Optional[str] = None) -> int:
     """Create outreach items for the highest-scoring jobs that don't have one yet.
     If `seen_after` is given, only jobs refreshed at/after that timestamp qualify —
@@ -287,12 +288,14 @@ def generate_outreach_for_top_jobs(limit: int = 15, min_score: int = 40,
         set_last_outreach_batch_at,
     )
     from core.hunter import build_linkedin_searches, generate_dm_template
-    import hashlib, json
+    from core.contact_finder import extract_contacts_from_text, extract_github_contacts
+    import hashlib, json, os
 
     profile = get_active_profile()
     profile_id = profile.get("_id")
 
-    top_jobs = get_jobs(min_score=min_score, india_friendly=india_friendly,
+    loc_filter = bd_friendly or india_friendly or "maybe"
+    top_jobs = get_jobs(min_score=min_score, bd_friendly=loc_filter,
                          seen_after=seen_after, limit=limit * 5)
     candidates = [j for j in top_jobs if not outreach_exists_for_job(j["id"])][:limit]
 
@@ -305,6 +308,36 @@ def generate_outreach_for_top_jobs(limit: int = 15, min_score: int = 40,
             searches = build_linkedin_searches(job["company"], profile=profile)
             dms = generate_dm_template(job, profile=profile)
             primary_url = searches[0]["url"] if searches else ""
+            
+            # --- Contact Extraction ---
+            contacts = extract_contacts_from_text(job.get("description", ""))
+            emails = contacts.get("emails", [])
+            linkedin_urls = contacts.get("linkedin", [])
+            
+            github_contacts = []
+            company_domain = job.get("company_domain", "")
+            if not emails and company_domain:
+                gh_token = os.environ.get("GITHUB_TOKEN")
+                github_contacts = extract_github_contacts(company_domain, gh_token)
+            
+            contact_name = "[Search LinkedIn]"
+            
+            # Add extracted contacts into the `searches` array with category="direct"
+            for gc in github_contacts:
+                searches.insert(0, {"label": f"GitHub: {gc['name']}", "category": "direct", "url": f"mailto:{gc['email']}"})
+                if contact_name == "[Search LinkedIn]":
+                    contact_name = gc['name']
+
+            for lnk in linkedin_urls:
+                searches.insert(0, {"label": "Direct LinkedIn URL", "category": "direct", "url": lnk})
+                if contact_name == "[Search LinkedIn]":
+                    contact_name = "Found LinkedIn URL"
+
+            for email in emails:
+                searches.insert(0, {"label": f"Email: {email}", "category": "direct", "url": f"mailto:{email}"})
+                if contact_name == "[Search LinkedIn]":
+                    contact_name = email
+            # --------------------------
 
             outreach_id = hashlib.md5(f"{job['id']}|linkedin".encode()).hexdigest()
             insert_outreach({
@@ -313,7 +346,7 @@ def generate_outreach_for_top_jobs(limit: int = 15, min_score: int = 40,
                 "job_title": job["title"],
                 "company": job["company"],
                 "company_domain": job.get("company_domain", ""),
-                "contact_name": "[Search LinkedIn]",
+                "contact_name": contact_name,
                 "contact_position": "Engineering Manager / Tech Lead / Head of Eng",
                 "contact_linkedin": primary_url,
                 "dm_short": dms["short"],

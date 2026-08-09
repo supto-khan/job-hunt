@@ -181,6 +181,37 @@ function switchToNewTab() {
     document.getElementById('bulk-actions').hidden = true;
 }
 
+function formatSeconds(total) {
+    total = Math.max(0, Math.round(total));
+    if (total < 60) return `${total}s`;
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+function showCollectLoader(estimateSec = 180) {
+    const loader = document.getElementById('collect-loader');
+    if (!loader) return;
+    document.getElementById('collect-estimate').textContent = formatSeconds(estimateSec);
+    document.getElementById('collect-elapsed').textContent = '0s';
+    loader.hidden = false;
+}
+
+function hideCollectLoader() {
+    const loader = document.getElementById('collect-loader');
+    if (loader) loader.hidden = true;
+}
+
+function updateCollectLoader(startMs, estimateSec = 180) {
+    const elapsed = Math.floor((Date.now() - startMs) / 1000);
+    const el = document.getElementById('collect-elapsed');
+    if (!el) return;
+    el.textContent = formatSeconds(elapsed);
+    if (elapsed > estimateSec) {
+        document.getElementById('collect-estimate').textContent = `${formatSeconds(estimateSec)} (almost there…)`;
+    }
+}
+
 async function refreshOutreach() {
     // Collect fresh jobs from all sources, then generate 15 outreach items
     // scoped to what the collection returned.
@@ -188,8 +219,11 @@ async function refreshOutreach() {
     if (!confirmed) return;
     const btn = document.getElementById('btn-refresh');
     btn.disabled = true;
-    const original = btn.innerHTML;
-    btn.textContent = 'Refreshing… (1–3 min)';
+    const estimateSec = 180;
+    const startMs = Date.now();
+    showCollectLoader(estimateSec);
+    const tick = setInterval(() => updateCollectLoader(startMs, estimateSec), 500);
+
     try {
         const data = await api('/outreach/refresh?limit=15', { method: 'POST' });
         const newJobs = data.collected?.new ?? 0;
@@ -199,8 +233,9 @@ async function refreshOutreach() {
     } catch (e) {
         showToast('Refresh failed: ' + e.message);
     } finally {
+        clearInterval(tick);
+        hideCollectLoader();
         btn.disabled = false;
-        btn.innerHTML = original;
     }
 }
 

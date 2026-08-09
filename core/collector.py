@@ -20,9 +20,12 @@ from sources.ashby import AshbySource
 from sources.html_scraper import HTMLCareerSource
 from sources.hn_algolia import HackerNewsSource
 from sources.rss import RSSSource
+from sources.jobicy import JobicySource
 from sources.workable import WorkableSource
 from sources.recruitee import RecruiteeSource
 from sources.bamboohr import BambooHRSource
+from sources.smartrecruiters import SmartRecruitersSource
+from sources.adzuna import AdzunaSource
 from config.settings import RAPIDAPI_KEY
 
 # Days before a job not re-seen gets deleted (cleanup). Could be profile-driven
@@ -42,6 +45,13 @@ def _build_job_board_sources() -> list:
         ArbeitnowSource(),
         HackerNewsSource(),
         RSSSource(),
+        JobicySource(),
+        GreenhouseSource(),
+        LeverSource(),
+        AshbySource(),
+        WorkableSource(),
+        SmartRecruitersSource(),
+        AdzunaSource(),
     ]
     if RAPIDAPI_KEY:
         # Queries come from the active profile (single source of truth).

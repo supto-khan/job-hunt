@@ -76,22 +76,7 @@ async function collectJobs() {
 }
 
 async function estimateCollectionTime() {
-    // Rough estimate: parallel job boards baseline + JSearch queries (sequential)
-    // + company crawl waves (concurrency 5). Keep conservative.
-    let jsearchCount = 0;
-    let activeCompanies = 0;
-    try {
-        const q = await api('/search-queries');
-        jsearchCount = (q.queries || []).filter(x => x.enabled !== false && x.query).length;
-    } catch {}
-    try {
-        const s = await api('/companies/stats');
-        activeCompanies = (s.by_status && s.by_status.active) || 0;
-    } catch {}
-    const base = 15;                        // parallel boards (remotive/remoteok/arbeitnow)
-    const jsearch = jsearchCount * 4;       // sequential, ~4s/query
-    const companyWaves = Math.ceil(activeCompanies / 5) * 3; // 5-wide concurrency, ~3s/wave
-    return Math.max(10, base + jsearch + companyWaves);
+    return 180; // 3 minutes estimate
 }
 
 function showCollectLoader(estimateSec) {
@@ -149,7 +134,6 @@ let chartOutreachInstance = null;
 
 function renderStats() {
     const s = state.stats;
-    const bdStats = s.by_bd || s.by_india || {};
     document.getElementById('stats-bar').innerHTML = `
         <div class="stat-card">
             <div class="label">Total Jobs</div>
@@ -159,24 +143,6 @@ function renderStats() {
             <div class="label">Avg Score</div>
             <div class="value">${s.avg_score || 0}</div>
         </div>
-        <div class="stat-card" style="border-color: var(--green);">
-            <div class="label">BD Friendly</div>
-            <div class="value" style="color: var(--green);">${bdStats['yes'] || 0}</div>
-        </div>
-        <div class="stat-card" style="border-color: var(--yellow);">
-            <div class="label">Maybe BD</div>
-            <div class="value" style="color: var(--yellow);">${bdStats['maybe'] || 0}</div>
-        </div>
-        <div class="stat-card" style="border-color: var(--red);">
-            <div class="label">Not BD</div>
-            <div class="value" style="color: var(--red);">${bdStats['no'] || 0}</div>
-        </div>
-        ${Object.entries(s.by_source || {}).map(([src, count]) => `
-            <div class="stat-card">
-                <div class="label">${src}</div>
-                <div class="value">${count}</div>
-            </div>
-        `).join('')}
     `;
 
     renderAnalyticsCharts(s);

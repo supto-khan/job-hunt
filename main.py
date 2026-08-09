@@ -143,7 +143,7 @@ async def api_get_companies(
     loc_filter = bd_friendly or india_friendly
     companies = get_companies(
         ats_platform=ats_platform, crawl_status=crawl_status,
-        india_friendly=loc_filter, search=search,
+        bd_friendly=loc_filter, search=search,
         limit=limit, offset=offset,
     )
     return {"companies": companies, "count": len(companies)}
@@ -366,7 +366,7 @@ async def api_generate_outreach(
     build LinkedIn search URLs + generate DMs. No API credits used."""
     loc_filter = bd_friendly or india_friendly or "maybe"
     generated = generate_outreach_for_top_jobs(
-        limit=limit, min_score=min_score, india_friendly=loc_filter,
+        limit=limit, min_score=min_score, bd_friendly=loc_filter,
     )
     if generated == 0:
         return {"generated": 0, "message": "No new jobs eligible for outreach"}
@@ -681,10 +681,10 @@ async def api_rescore_all(
 
             conn.execute(
                 "UPDATE jobs SET relevance_score = ?, experience_level = ?, "
-                "india_friendly = ?, location_note = ?, tech_stack = ?, "
+                "bd_friendly = ?, location_note = ?, tech_stack = ?, "
                 "scored_profile_id = ? WHERE id = ?",
                 (result["score"], result["experience_level"],
-                 result["india_friendly"], result["location_note"],
+                 result["bd_friendly"], result["location_note"],
                  tech_stack, profile_id, r["id"]),
             )
             updated += 1

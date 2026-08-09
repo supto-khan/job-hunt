@@ -13,19 +13,6 @@ class RSSSource(BaseSource):
     name = "rss_feeds"
 
     RSS_FEEDS = [
-        # WeWorkRemotely Feeds
-        {
-            "name": "weworkremotely_fullstack",
-            "url": "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss",
-        },
-        {
-            "name": "weworkremotely_backend",
-            "url": "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss",
-        },
-        {
-            "name": "weworkremotely_frontend",
-            "url": "https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss",
-        },
         # Himalayas Remote Jobs Feed
         {
             "name": "himalayas_remote",
@@ -60,6 +47,43 @@ class RSSSource(BaseSource):
         {
             "name": "jobspresso",
             "url": "https://jobspresso.co/category/tech/feed/",
+        },
+        # RemoteFirstJobs Feed
+        {
+            "name": "remotefirstjobs",
+            "url": "https://remotefirstjobs.com/rss",
+        },
+        # Real Work From Anywhere Feeds
+        {
+            "name": "realwork_fullstack",
+            "url": "https://www.realworkfromanywhere.com/remote-fullstack-jobs/rss.xml",
+        },
+        {
+            "name": "realwork_frontend",
+            "url": "https://www.realworkfromanywhere.com/remote-frontend-jobs/rss.xml",
+        },
+        {
+            "name": "realwork_backend",
+            "url": "https://www.realworkfromanywhere.com/remote-backend-jobs/rss.xml",
+        },
+        {
+            "name": "realwork_devops",
+            "url": "https://www.realworkfromanywhere.com/remote-devops-and-sysadmin-jobs/rss.xml",
+        },
+        # Authentic Jobs (Web Dev & Design)
+        {
+            "name": "authenticjobs",
+            "url": "https://authenticjobs.com/feed/",
+        },
+        # Dribbble Tech & Design Jobs
+        {
+            "name": "dribbble_jobs",
+            "url": "https://dribbble.com/jobs.rss",
+        },
+        # ReliefWeb (UN OCHA Global & Remote Tech Consultancy)
+        {
+            "name": "reliefweb_remote",
+            "url": "https://reliefweb.int/jobs/rss.xml?view=unspecified-location",
         },
     ]
 

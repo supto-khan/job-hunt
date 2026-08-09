@@ -34,6 +34,13 @@
             <button class="btn btn-outline" id="btn-preview" onclick="previewEmail()">Preview Email</button>
             <button class="btn btn-yellow" id="btn-send" onclick="sendEmailNow()">Send Email Now</button>
             <button class="btn btn-outline" id="btn-sync" onclick="syncOutreach()" title="Generate 15 new outreach items from jobs already in the DB — no collection run">⟳ Sync</button>
+            <div id="collect-loader" class="collect-loader" hidden>
+                <div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>
+                <div class="collect-loader-text">
+                    <div class="collect-loader-title">Refreshing outreach…</div>
+                    <div class="collect-loader-sub"><span id="collect-elapsed">0s</span> / est. <span id="collect-estimate">3m</span></div>
+                </div>
+            </div>
             <button class="btn btn-green" id="btn-refresh" onclick="refreshOutreach()" title="Run a fresh Collect Jobs, then generate 15 new outreach items from the results">🔄 Refresh</button>
         </div>
     </div>

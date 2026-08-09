@@ -373,7 +373,7 @@ def get_jobs(
             query += " AND (last_seen >= %s OR (last_seen = '' AND discovered_at >= %s))"
             params.extend([seen_after, seen_after])
 
-        query += " ORDER BY relevance_score DESC, discovered_at DESC LIMIT %s OFFSET %s"
+        query += " ORDER BY (CASE WHEN status = 'new' THEN 0 ELSE 1 END), relevance_score DESC, discovered_at DESC LIMIT %s OFFSET %s"
         params.extend([limit, offset])
 
         with conn.cursor() as cur:
@@ -634,7 +634,7 @@ def get_outreach(
             s_param = f"%{search}%"
             params.extend([s_param, s_param])
 
-        query += " ORDER BY o.created_at DESC LIMIT %s OFFSET %s"
+        query += " ORDER BY (CASE WHEN o.status = 'new' THEN 0 ELSE 1 END), o.created_at DESC LIMIT %s OFFSET %s"
         params.extend([limit, offset])
 
         with conn.cursor() as cur:
