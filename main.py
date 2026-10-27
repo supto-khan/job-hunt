@@ -701,20 +701,20 @@ async def api_export_profile(pid: int):
 async def api_rescore_all(
     delete_below_min: bool = Query(False),
 ):
-    """Re-score every job against the active profile. Optionally delete jobs
-    that now score below the profile's min_score_to_store."""
+    """Re-score every job against its assigned core profile or best matching CV profile."""
     from core.database import get_connection
     from core.scorer import score_job
+    from core.profile import get_hunting_profiles, get_active_profile
 
-    profile = get_active_profile()
-    profile_id = profile.get("_id")
-    min_store = int((profile.get("scoring") or {}).get("min_score_to_store", 25))
+    hunting_profiles = get_hunting_profiles()
+    profiles_by_id = {p["_id"]: p for p in hunting_profiles if p.get("_id")}
+    active_profile = get_active_profile()
 
     conn = get_connection()
     try:
-        rows = conn.execute(
-            "SELECT id, title, description, location, tech_stack FROM jobs"
-        ).fetchall()
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, title, description, location, tech_stack, scored_profile_id FROM jobs")
+            rows = cur.fetchall()
     finally:
         conn.close()
 
@@ -722,31 +722,47 @@ async def api_rescore_all(
     deleted = 0
     conn = get_connection()
     try:
-        for r in rows:
-            result = score_job(r["title"], r["description"] or "",
-                               r["location"] or "", profile=profile)
+        with conn.cursor() as cur:
+            for r in rows:
+                assigned_pid = r.get("scored_profile_id")
+                target_profile = profiles_by_id.get(assigned_pid)
 
-            if delete_below_min and result["score"] < min_store:
-                conn.execute("DELETE FROM jobs WHERE id = ?", (r["id"],))
-                deleted += 1
-                continue
+                if not target_profile:
+                    best_prof = active_profile
+                    best_res = score_job(r["title"], r["description"] or "", r["location"] or "", profile=active_profile)
+                    for hp in hunting_profiles:
+                        res_hp = score_job(r["title"], r["description"] or "", r["location"] or "", profile=hp)
+                        if res_hp["score"] > best_res["score"]:
+                            best_res = res_hp
+                            best_prof = hp
+                    target_profile = best_prof
+                    result = best_res
+                else:
+                    result = score_job(r["title"], r["description"] or "", r["location"] or "", profile=target_profile)
 
-            existing_tech = set(
-                t.strip() for t in (r["tech_stack"] or "").split(",") if t.strip()
-            )
-            existing_tech.update(result["tech_stack"])
-            tech_stack = ", ".join(sorted(existing_tech))
+                profile_id = target_profile.get("_id")
+                min_store = int((target_profile.get("scoring") or {}).get("min_score_to_store", 25))
 
-            conn.execute(
-                "UPDATE jobs SET relevance_score = ?, experience_level = ?, "
-                "bd_friendly = ?, location_note = ?, tech_stack = ?, "
-                "scored_profile_id = ? WHERE id = ?",
-                (result["score"], result["experience_level"],
-                 result["bd_friendly"], result["location_note"],
-                 tech_stack, profile_id, r["id"]),
-            )
-            updated += 1
-        conn.commit()
+                if delete_below_min and result["score"] < min_store:
+                    cur.execute("DELETE FROM jobs WHERE id = %s", (r["id"],))
+                    deleted += 1
+                    continue
+
+                existing_tech = set(
+                    t.strip() for t in (r["tech_stack"] or "").split(",") if t.strip()
+                )
+                existing_tech.update(result["tech_stack"])
+                tech_stack = ", ".join(sorted(existing_tech))
+
+                cur.execute(
+                    "UPDATE jobs SET relevance_score = %s, experience_level = %s, "
+                    "bd_friendly = %s, location_note = %s, tech_stack = %s, "
+                    "scored_profile_id = %s WHERE id = %s",
+                    (result["score"], result["experience_level"],
+                     result["bd_friendly"], result["location_note"],
+                     tech_stack, profile_id, r["id"]),
+                )
+                updated += 1
     finally:
         conn.close()
 
