@@ -48,6 +48,13 @@ class FreeHireSource(BaseSource):
         seen_urls = set()
         jobs: List[Job] = []
 
+        applied_sigs = {"ids": set(), "urls": set(), "pairs": set()}
+        try:
+            from core.database import get_applied_job_signatures
+            applied_sigs = get_applied_job_signatures()
+        except Exception:
+            pass
+
         async with httpx.AsyncClient(timeout=30) as client:
             for term in terms:
                 params = {
@@ -70,6 +77,16 @@ class FreeHireSource(BaseSource):
                         url = item.get("url", "")
                         if not url or url in seen_urls:
                             continue
+                        clean_url = url.strip().lower()
+                        base_u = clean_url.split("?")[0].rstrip("/")
+                        if clean_url in applied_sigs["urls"] or (base_u and base_u in applied_sigs["urls"]):
+                            continue
+
+                        comp = (item.get("company") or "").strip().lower()
+                        tit = (item.get("title") or "").strip().lower()
+                        if (comp, tit) in applied_sigs["pairs"]:
+                            continue
+
                         seen_urls.add(url)
 
                         job = self._map_job(item)

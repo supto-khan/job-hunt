@@ -772,13 +772,15 @@ async def api_freehire_search(
     regions: Optional[str] = None,
     is_tech: Optional[str] = "tech",
     posted_within_days: Optional[int] = 14,
+    include_applied: bool = Query(False),
     limit: int = Query(25, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    """Direct live query to FreeHire API with filters."""
+    """Direct live query to FreeHire API with filters, excluding already applied jobs."""
     import httpx
     import hashlib
     from config.settings import FREEHIRE_API_KEY
+    from core.database import get_applied_job_signatures
 
     params = {
         "limit": limit,
@@ -824,6 +826,7 @@ async def api_freehire_search(
                     "total": 0,
                     "limit": limit,
                     "offset": offset,
+                    "hidden_applied": 0,
                 }
             payload = resp.json()
             raw_jobs = payload.get("data", [])
@@ -836,14 +839,29 @@ async def api_freehire_search(
             "total": 0,
             "limit": limit,
             "offset": offset,
+            "hidden_applied": 0,
         }
 
-    # Format jobs & check if already saved in local DB
+    # Load applied job signatures to automatically hide already applied jobs
+    applied_sigs = {"ids": set(), "urls": set(), "pairs": set()}
+    try:
+        applied_sigs = get_applied_job_signatures()
+    except Exception:
+        pass
+
+    # Format jobs & filter out already applied postings
     formatted_jobs = []
+    hidden_applied = 0
     for item in raw_jobs:
         title = (item.get("title") or "").strip()
         company = (item.get("company") or "").strip()
         loc = (item.get("location") or "").strip()
+        url = (item.get("url") or "").strip()
+        clean_url = url.strip().lower()
+        base_url = clean_url.split("?")[0].rstrip("/")
+        comp_norm = company.strip().lower()
+        tit_norm = title.strip().lower()
+
         work_mode_val = item.get("work_mode") or ""
         if work_mode_val == "remote":
             if loc and "remote" not in loc.lower():
@@ -869,6 +887,20 @@ async def api_freehire_search(
         except Exception:
             pass
 
+        # Exclude applied jobs
+        is_applied = (
+            saved_status == "applied"
+            or job_id in applied_sigs["ids"]
+            or (clean_url and clean_url in applied_sigs["urls"])
+            or (base_url and base_url in applied_sigs["urls"])
+            or ((comp_norm, tit_norm) in applied_sigs["pairs"])
+        )
+
+        if is_applied:
+            hidden_applied += 1
+            if not include_applied:
+                continue
+
         enrichment = item.get("enrichment") or {}
         s_min = enrichment.get("salary_min")
         s_max = enrichment.get("salary_max")
@@ -891,7 +923,7 @@ async def api_freehire_search(
             "raw_location": loc,
             "work_mode": work_mode_val,
             "source": item.get("source", "freehire"),
-            "url": item.get("url", ""),
+            "url": url,
             "posted_at": item.get("posted_at", ""),
             "skills": item.get("skills", []),
             "description": item.get("description", ""),
@@ -902,13 +934,15 @@ async def api_freehire_search(
             "is_saved": is_saved,
             "saved_status": saved_status,
             "saved_score": saved_score,
+            "is_applied": is_applied,
         })
 
     return {
         "jobs": formatted_jobs,
-        "total": total,
+        "total": max(0, total - (0 if include_applied else hidden_applied)),
         "limit": limit,
         "offset": offset,
+        "hidden_applied": hidden_applied,
     }
 
 
@@ -924,6 +958,7 @@ class FreeHireImportRequest(BaseModel):
     salary: Optional[str] = ""
     seniority: Optional[str] = ""
     work_mode: Optional[str] = ""
+    status: Optional[str] = "new"
 
 
 @app.post("/api/freehire/import")
@@ -931,7 +966,7 @@ async def api_freehire_import(body: FreeHireImportRequest):
     """Import a FreeHire job into local DB with automatic profile scoring."""
     from datetime import datetime
     from core.models import Job
-    from core.database import insert_job
+    from core.database import insert_job, update_job_status
     from core.scorer import score_job
     from core.profile import get_active_profile
 
@@ -946,6 +981,9 @@ async def api_freehire_import(body: FreeHireImportRequest):
             loc = loc or "Remote"
 
     tech_stack = ", ".join(body.skills) if body.skills else ""
+    req_status = (body.status or "new").strip().lower()
+    if req_status not in ("new", "applied", "reviewed"):
+        req_status = "new"
 
     job = Job(
         title=body.title.strip(),
@@ -958,6 +996,7 @@ async def api_freehire_import(body: FreeHireImportRequest):
         tech_stack=tech_stack,
         salary=body.salary or "",
         job_type="remote" if body.work_mode == "remote" else "full-time",
+        status=req_status,
     )
 
     result = score_job(job.title, job.description, job.location, profile=profile)
@@ -978,11 +1017,16 @@ async def api_freehire_import(body: FreeHireImportRequest):
     job_dict["id"] = job.fingerprint
     job_dict["discovered_at"] = datetime.utcnow().isoformat()
     job_dict["scored_profile_id"] = profile_id
+    job_dict["status"] = req_status
 
     status = insert_job(job_dict)
+    if req_status == "applied":
+        update_job_status(job.fingerprint, "applied")
+
     return {
         "ok": True,
         "status": status,
+        "job_status": req_status,
         "score": job.relevance_score,
         "id": job.fingerprint,
     }

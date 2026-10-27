@@ -124,6 +124,10 @@ async function executeSearch(offset = 0) {
         params.set('skills_mode', document.getElementById('fh-skills-mode').value);
     }
 
+    const hideAppliedCheckbox = document.getElementById('fh-hide-applied');
+    const includeApplied = hideAppliedCheckbox ? !hideAppliedCheckbox.checked : false;
+    params.set('include_applied', includeApplied);
+
     try {
         const resp = await fetch(`/api/freehire/search?${params.toString()}`);
         const data = await resp.json();
@@ -140,6 +144,7 @@ async function executeSearch(offset = 0) {
 
         fhState.jobs = data.jobs || [];
         fhState.total = data.total || 0;
+        fhState.hiddenApplied = data.hidden_applied || 0;
         renderJobs();
         updatePagination();
     } catch (err) {
@@ -156,18 +161,26 @@ function renderJobs() {
     const statusText = document.getElementById('search-status-text');
 
     if (!fhState.jobs.length) {
-        statusText.innerHTML = `<span>Found <strong class="text-brand-dark">0</strong> matching postings</span>`;
+        const appliedNote = (fhState.hiddenApplied > 0)
+            ? ` (${fhState.hiddenApplied} already applied jobs hidden)`
+            : '';
+        statusText.innerHTML = `<span>Found <strong class="text-brand-dark">0</strong> matching postings${appliedNote}</span>`;
         list.innerHTML = `
             <div class="empty-state py-12 text-center">
                 <div class="text-3xl mb-2">🍃</div>
                 <h3 class="text-base font-semibold text-brand-dark mb-1">No postings match these filters</h3>
                 <p class="text-xs text-brand-muted">Try broadening your keyword, switching work format to "All Formats", or resetting filters.</p>
+                ${fhState.hiddenApplied > 0 ? `<p class="text-xs text-brand-primary mt-2">✨ <strong>${fhState.hiddenApplied}</strong> jobs you already applied for are filtered out.</p>` : ''}
             </div>
         `;
         return;
     }
 
-    statusText.innerHTML = `<span>Found <strong class="text-brand-primary font-semibold">${fhState.total.toLocaleString()}</strong> live postings &middot; Showing ${fhState.offset + 1}–${Math.min(fhState.offset + fhState.jobs.length, fhState.total)}</span>`;
+    const hiddenBadge = (fhState.hiddenApplied > 0)
+        ? ` <span class="text-brand-muted font-normal bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">(${fhState.hiddenApplied} applied hidden)</span>`
+        : '';
+
+    statusText.innerHTML = `<span>Found <strong class="text-brand-primary font-semibold">${fhState.total.toLocaleString()}</strong> live postings${hiddenBadge} &middot; Showing ${fhState.offset + 1}–${Math.min(fhState.offset + fhState.jobs.length, fhState.total)}</span>`;
 
     list.innerHTML = fhState.jobs.map(job => {
         const modeClass = job.work_mode === 'remote' ? 'mode-remote' : (job.work_mode === 'hybrid' ? 'mode-hybrid' : 'mode-onsite');
@@ -179,16 +192,35 @@ function renderJobs() {
             </span>
         `).join('');
 
-        const importButtonHtml = job.is_saved
-            ? `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-brand-primary/40 text-brand-primary text-xs font-medium">
-                 ✓ In Pipeline (${job.saved_score || 0}%)
-               </span>`
-            : `<button id="import-btn-${job.id}" onclick="event.stopPropagation(); importJob('${job.id}')" class="btn btn-outline btn-sm text-brand-primary border-brand-primary/40 hover:bg-emerald-50 transition flex items-center gap-1">
-                 <span>📥</span> Import to Hunter
-               </button>`;
+        let actionButtonHtml = '';
+        if (job.is_applied || job.saved_status === 'applied') {
+            actionButtonHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
+                ✓ Already Applied
+            </span>`;
+        } else if (job.is_saved) {
+            actionButtonHtml = `
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-brand-primary/40 text-brand-primary text-xs font-medium">
+                        ✓ In Pipeline (${job.saved_score || 0}%)
+                    </span>
+                    <button id="apply-btn-${job.id}" onclick="event.stopPropagation(); markJobApplied('${job.id}')" class="btn btn-outline btn-sm text-blue-600 border-blue-300 hover:bg-blue-50 transition flex items-center gap-1" title="Mark as applied">
+                        <span>✓</span> Applied
+                    </button>
+                </div>`;
+        } else {
+            actionButtonHtml = `
+                <div class="flex items-center gap-1.5">
+                    <button id="import-btn-${job.id}" onclick="event.stopPropagation(); importJob('${job.id}')" class="btn btn-outline btn-sm text-brand-primary border-brand-primary/40 hover:bg-emerald-50 transition flex items-center gap-1">
+                        <span>📥</span> Import
+                    </button>
+                    <button id="apply-btn-${job.id}" onclick="event.stopPropagation(); markJobApplied('${job.id}')" class="btn btn-outline btn-sm text-blue-600 border-blue-300 hover:bg-blue-50 transition flex items-center gap-1" title="Mark this job as Applied (will hide it from search)">
+                        <span>✓</span> Applied
+                    </button>
+                </div>`;
+        }
 
         return `
-            <div class="bg-white border border-slate-200 hover:border-brand-primary rounded-xl p-4 transition duration-150 shadow-sm hover:shadow-md flex flex-col md:flex-row justify-between gap-4 cursor-pointer" onclick="openFhModal('${job.id}')">
+            <div id="fh-card-${job.id}" class="bg-white border border-slate-200 hover:border-brand-primary rounded-xl p-4 transition duration-150 shadow-sm hover:shadow-md flex flex-col md:flex-row justify-between gap-4 cursor-pointer" onclick="openFhModal('${job.id}')">
                 <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2 mb-1.5">
                         <span class="font-semibold text-xs text-brand-dark">${escapeHtml(job.company)}</span>
@@ -225,7 +257,7 @@ function renderJobs() {
                         <a href="${escapeHtml(job.url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="btn btn-outline btn-sm flex items-center gap-1">
                             Apply ↗
                         </a>
-                        ${importButtonHtml}
+                        ${actionButtonHtml}
                     </div>
                 </div>
             </div>
@@ -285,6 +317,74 @@ async function importJob(jobId) {
         if (btn) {
             btn.disabled = false;
             btn.textContent = '📥 Import to Hunter';
+        }
+    }
+}
+
+async function markJobApplied(jobId) {
+    const job = fhState.jobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    const btn = document.getElementById(`apply-btn-${jobId}`);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> Saving…';
+    }
+
+    try {
+        const resp = await fetch('/api/freehire/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: job.title,
+                company: job.company,
+                location: job.location,
+                description: job.description || job.summary || '',
+                url: job.url,
+                source: 'freehire',
+                posted_at: job.posted_at,
+                skills: job.skills || [],
+                salary: job.salary,
+                seniority: job.seniority,
+                work_mode: job.work_mode,
+                status: 'applied',
+            })
+        });
+
+        const result = await resp.json();
+        if (result.ok) {
+            job.is_saved = true;
+            job.is_applied = true;
+            job.saved_status = 'applied';
+
+            const hideAppliedCheckbox = document.getElementById('fh-hide-applied');
+            const shouldHide = hideAppliedCheckbox ? hideAppliedCheckbox.checked : true;
+
+            const card = document.getElementById(`fh-card-${jobId}`);
+            if (shouldHide && card) {
+                card.style.transition = 'all 0.35s ease-out';
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-8px) scale(0.97)';
+                setTimeout(() => {
+                    fhState.jobs = fhState.jobs.filter(j => j.id !== jobId);
+                    fhState.hiddenApplied = (fhState.hiddenApplied || 0) + 1;
+                    renderJobs();
+                }, 350);
+            } else {
+                renderJobs();
+            }
+        } else {
+            alert('Could not mark applied: ' + (result.error || 'Unknown error'));
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span>✓</span> Applied';
+            }
+        }
+    } catch (e) {
+        alert('Network error: ' + e.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>✓</span> Applied';
         }
     }
 }
@@ -375,12 +475,20 @@ function openFhModal(jobId) {
 
         <div class="flex items-center justify-between pt-4 border-t border-slate-200">
             <button onclick="closeFhModal()" class="btn btn-outline">Close</button>
-            <div class="flex items-center gap-3">
-                ${job.is_saved
-                    ? `<span class="text-xs text-brand-primary font-semibold">✓ In your pipeline (${job.saved_score}%)</span>`
-                    : `<button onclick="importJob('${job.id}'); setTimeout(closeFhModal, 500);" class="btn btn-primary text-xs">
-                         📥 Import to Pipeline
-                       </button>`
+            <div class="flex items-center gap-2">
+                ${job.is_applied || job.saved_status === 'applied'
+                    ? `<span class="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">✓ Already Applied</span>`
+                    : `
+                        <button onclick="markJobApplied('${job.id}'); setTimeout(closeFhModal, 400);" class="btn btn-outline text-xs text-blue-600 border-blue-300 hover:bg-blue-50 flex items-center gap-1">
+                            <span>✓</span> Mark Applied
+                        </button>
+                        ${job.is_saved
+                            ? `<span class="text-xs text-brand-primary font-semibold">✓ Saved (${job.saved_score}%)</span>`
+                            : `<button onclick="importJob('${job.id}'); setTimeout(closeFhModal, 500);" class="btn btn-primary text-xs">
+                                 📥 Import
+                               </button>`
+                        }
+                    `
                 }
                 <a href="${escapeHtml(job.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-green text-xs flex items-center gap-1">
                     Open Official ATS Posting ↗

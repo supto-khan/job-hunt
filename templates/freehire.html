@@ -251,6 +251,14 @@
             </select>
         </div>
 
+        <!-- Hide Applied Filter -->
+        <div class="filter-group" style="min-width: 140px; justify-content: flex-end;">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-medium text-brand-dark pb-2">
+                <input type="checkbox" id="fh-hide-applied" checked onchange="executeSearch(0)" class="rounded text-brand-primary focus:ring-brand-primary accent-emerald-600">
+                <span>Hide Applied Jobs</span>
+            </label>
+        </div>
+
         <!-- Actions -->
         <div class="filter-group" style="flex-direction: row; align-items: flex-end; gap: 8px;">
             <button class="btn btn-primary" onclick="executeSearch(0)" id="btn-search">

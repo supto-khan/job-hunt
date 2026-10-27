@@ -431,6 +431,38 @@ def update_job_status(job_id: str, status: str):
         conn.close()
 
 
+def get_applied_job_signatures() -> Dict[str, set]:
+    """Return sets of IDs, clean URLs, and (company, title) pairs for all applied jobs."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, url, LOWER(TRIM(company)) AS comp, LOWER(TRIM(title)) AS tit
+                FROM jobs
+                WHERE status = 'applied'
+            """)
+            rows = cur.fetchall()
+            ids = set()
+            urls = set()
+            pairs = set()
+            for r in rows:
+                if r.get("id"):
+                    ids.add(r["id"])
+                u = (r.get("url") or "").strip().lower()
+                if u:
+                    urls.add(u)
+                    base_u = u.split("?")[0].rstrip("/")
+                    if base_u:
+                        urls.add(base_u)
+                c = (r.get("comp") or "").strip()
+                t = (r.get("tit") or "").strip()
+                if c and t:
+                    pairs.add((c, t))
+            return {"ids": ids, "urls": urls, "pairs": pairs}
+    finally:
+        conn.close()
+
+
 def get_stats() -> Dict[str, Any]:
     conn = get_connection()
     try:
