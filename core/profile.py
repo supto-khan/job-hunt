@@ -391,40 +391,107 @@ def _legacy_profile_from_settings() -> dict:
     cfg["location"]["timezone_compatible"] = list(getattr(s, "TIMEZONE_COMPATIBLE", []))
     cfg["location"]["timezone_incompatible"] = list(getattr(s, "TIMEZONE_INCOMPATIBLE", []))
 
-    cfg["scoring"]["experience_target"] = "mid"
+    cfg["scoring"]["experience_target"] = "senior"
     cfg["scoring"]["min_relevance_score"] = getattr(s, "MIN_RELEVANCE_SCORE", 50)
     cfg["scoring"]["min_score_to_store"] = 25
-    cfg["scoring"]["core_tech"] = ["python", "django", "fastapi", "flask"]
+    cfg["scoring"]["core_tech"] = ["react", "nextjs", "angular", "typescript", "javascript", "tailwind", "rest api"]
     cfg["scoring"]["backend_signals"] = [
-        "api", "backend", "back-end", "server-side", "microservice",
-        "database", "rest", "graphql", "endpoint",
+        "component architecture", "design system", "dashboard", "reporting",
+        "ui/ux", "responsive design", "state management", "performance optimization",
     ]
 
-    cfg["outreach"]["candidate_name"] = "Parmanand"
-    cfg["outreach"]["candidate_core_tech"] = ["python", "django", "fastapi", "drf"]
-    cfg["outreach"]["candidate_extra_tech"] = ["postgresql", "redis", "aws", "docker", "microservices"]
-    cfg["outreach"]["bio_short"] = "3+ years building {stack} backends"
+    cfg["outreach"]["candidate_name"] = "Supto Mohammad Sabur Islam Khan"
+    cfg["outreach"]["candidate_core_tech"] = ["React", "Next.js", "Angular", "TypeScript", "JavaScript"]
+    cfg["outreach"]["candidate_extra_tech"] = ["Tailwind CSS", "HTML5/CSS3", "Bootstrap", "REST APIs", "Redux / RxJS", "Jest / Karma"]
+    cfg["outreach"]["bio_short"] = "5+ years shipping responsive, scalable web applications across React, Angular, and TypeScript"
     cfg["outreach"]["achievements"] = [
-        "Backend Developer at DoctusTech, a healthcare SaaS serving 5,000+ US medical professionals.",
-        "Architected the Django/DRF platform, integrated 3 microservices, cut API response times 50% with Redis caching.",
-        "Previously built multitenant SaaS + Stripe integrations processing 2,000+ monthly transactions.",
+        "5+ years building scalable web applications and enterprise portals with modular component design.",
+        "Architected multi-module dashboards and analytics tools cutting report generation time by 70%.",
+        "Delivered responsive web interfaces and mobile hybrid apps with sub-second page loads and seamless REST API integrations.",
     ]
     cfg["outreach"]["dm_short_template"] = (
         "{greeting}, I noticed {company} is hiring for {title}. "
-        "I have {bio_short} — shipped a healthcare SaaS serving 5,000+ users "
-        "with sub-200ms APIs. Would love to connect."
+        "I'm a Frontend Developer with 5+ years shipping scalable web apps across React, Angular, and TypeScript. "
+        "Would love to connect."
     )
     cfg["outreach"]["dm_long_template"] = (
         "{greeting},\n\n"
-        "Noticed {company} is hiring for {title}. The stack caught my eye — "
-        "I've been shipping {stack} backends for 3+ years.\n\n"
+        "I noticed {company} is hiring for {title}. Given my 5+ years specializing in modern frontend architecture "
+        "across React, Next.js, and TypeScript, the role looks like a great match.\n\n"
+        "A few key highlights from my work:\n"
         "{achievements}\n\n"
-        "Open to a 15-min chat to see if there's a fit?\n\n"
-        "Thanks,\n{candidate_name}"
+        "I am available for remote positions with flexible timezone overlap. Would you be open to a 10-15 minute introductory chat?\n\n"
+        "Best regards,\n{candidate_name}"
     )
-    cfg["outreach"]["email_digest_subject_role"] = "backend"
-    cfg["outreach"]["email_greeting"] = "Your Daily Job Digest"
+    cfg["outreach"]["email_digest_subject_role"] = "Frontend Developer"
+    cfg["outreach"]["email_greeting"] = "Good morning, Supto 👋"
+    cfg["outreach"]["recipient_email"] = "suptokhan24@gmail.com"
     return cfg
+
+
+def ensure_core_profiles() -> list[int]:
+    """Ensure the 3 core CV profiles are imported and up to date in the database."""
+    core_slugs = ["supto_angular", "supto_fullstack", "supto_frontend"]
+    pids = []
+    for slug in core_slugs:
+        try:
+            pid = import_preset(slug, overwrite=True)
+            pids.append(pid)
+        except Exception as e:
+            print(f"[WARN] Could not seed preset {slug}: {e}", flush=True)
+    return pids
+
+
+def get_hunting_profiles() -> list[dict]:
+    """Return the 3 core CV candidate profiles configured for 24/7 background hunting."""
+    core_names = [
+        "Supto — Senior Angular Developer",
+        "Supto — Senior Full-Stack Developer",
+        "Supto — Frontend Developer",
+    ]
+
+    try:
+        ensure_core_profiles()
+        profiles = list_profiles()
+
+        detailed = []
+        # Prioritize the 3 core CV profiles
+        for name in core_names:
+            p = next((x for x in profiles if x["name"] == name), None)
+            if p:
+                row = _read_profile_row(p["id"])
+                if row:
+                    raw_cfg = json.loads(row["config_json"])
+                    cfg = validate_config(raw_cfg)
+                    cfg["_id"] = row["id"]
+                    cfg["_name"] = row["name"]
+                    detailed.append(cfg)
+
+        if detailed:
+            return detailed
+    except Exception as e:
+        print(f"[WARN] DB profiles read error, falling back to YAML presets: {e}", flush=True)
+
+    # Resilient fallback: directly parse the 3 core YAML presets
+    detailed = []
+    core_slugs = ["supto_angular", "supto_fullstack", "supto_frontend"]
+    import yaml
+    for idx, slug in enumerate(core_slugs, start=1):
+        path = PROFILES_DIR / f"{slug}.yaml"
+        if path.exists():
+            try:
+                with open(path, encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                name = data.get("name") or slug
+                config = {k: v for k, v in data.items() if k not in ("name", "description")}
+                cfg = validate_config(config)
+                cfg["_id"] = idx
+                cfg["_name"] = name
+                detailed.append(cfg)
+            except Exception as e:
+                print(f"[WARN] Failed loading YAML profile {slug}: {e}", flush=True)
+
+    return detailed
 
 
 def ensure_first_run_seed() -> Optional[int]:
@@ -435,13 +502,28 @@ def ensure_first_run_seed() -> Optional[int]:
             row = cur.fetchone()
             if row and row["c"] > 0:
                 return None
+            
+            # Seed all 3 core profiles from user CVs
+            pids = ensure_core_profiles()
+            active_pid = pids[0] if pids else None
+
+            if active_pid:
+                ts = datetime.utcnow().isoformat()
+                cur.execute(
+                    "INSERT INTO app_settings (`key`, `value`, updated_at) "
+                    "VALUES ('active_profile_id', %s, %s) "
+                    "ON DUPLICATE KEY UPDATE `value`=VALUES(`value`), updated_at=VALUES(updated_at)",
+                    (str(active_pid), ts),
+                )
+                return active_pid
+
             ts = datetime.utcnow().isoformat()
             cfg = _legacy_profile_from_settings()
             cur.execute(
                 "INSERT INTO profiles (name, description, config_json, created_at, updated_at, source) "
                 "VALUES (%s, %s, %s, %s, %s, 'legacy')",
-                ("Backend Python (legacy)",
-                 "Seeded from pre-profile hardcoded settings. Edit or switch to another preset.",
+                ("Frontend Developer (default)",
+                 "Seeded profile for Supto. Edit or switch to another preset.",
                  json.dumps(cfg), ts, ts),
             )
             pid = cur.lastrowid

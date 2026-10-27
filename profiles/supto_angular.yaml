@@ -1,0 +1,240 @@
+name: "Supto — Senior Angular Developer"
+description: "Angular specialist with 5+ years building production-grade, scalable Angular applications, LMS architectures, and Ionic hybrid mobile apps. Strictly remote roles."
+schema_version: 1
+
+search:
+  default_terms:
+    - "senior angular developer"
+    - "lead angular developer"
+    - "angular developer"
+    - "angular frontend engineer"
+    - "frontend developer angular"
+    - "angular typescript engineer"
+    - "angular ionic developer"
+    - "senior frontend engineer"
+  title_keywords_positive:
+    - "angular"
+    - "frontend"
+    - "front-end"
+    - "front end"
+    - "lead angular"
+    - "senior angular"
+    - "angular developer"
+    - "angular engineer"
+    - "ui engineer"
+    - "software engineer"
+    - "web developer"
+    - "ionic"
+    - "typescript"
+  title_keywords_negative:
+    - "backend only"
+    - "back-end only"
+    - "python only"
+    - "django"
+    - "java only"
+    - "c#"
+    - ".net"
+    - "php only"
+    - "ruby"
+    - "rails"
+    - "ios native"
+    - "swift"
+    - "android kotlin"
+    - "qa"
+    - "test automation"
+    - "intern"
+    - "internship"
+    - "trainee"
+    - "unpaid"
+    - "volunteer"
+    - "junior"
+    - "entry level"
+  relevant_tech:
+    - "angular"
+    - "typescript"
+    - "rxjs"
+    - "javascript"
+    - "html5"
+    - "css3"
+    - "bootstrap"
+    - "tailwind"
+    - "ionic"
+    - "capacitor"
+    - "karma"
+    - "jasmine"
+    - "rest api"
+    - "firebase"
+    - "git"
+    - "github"
+    - "jira"
+  jsearch_default_queries:
+    - query: "Senior Angular Developer"
+      country: "US"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+    - query: "Lead Angular Developer remote"
+      country: "GB"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+    - query: "Angular Frontend Engineer remote"
+      country: "BD"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+
+scoring:
+  experience_target: "senior"
+  min_relevance_score: 50
+  min_score_to_store: 25
+  weights:
+    title: 40
+    tech: 35
+    experience: 15
+    signal: 10
+  core_tech:
+    - "angular"
+    - "typescript"
+    - "rxjs"
+    - "javascript"
+    - "ionic"
+    - "rest api"
+  backend_signals:
+    - "lms"
+    - "learning management system"
+    - "hybrid mobile"
+    - "dashboard"
+    - "reporting"
+    - "scalable"
+    - "component architecture"
+    - "reactive forms"
+    - "state management"
+    - "performance optimization"
+  experience_bonuses:
+    fresher:
+      fresher: 15
+      junior: 10
+      mid: 0
+      senior: -5
+    junior:
+      fresher: 5
+      junior: 15
+      mid: 5
+      senior: -5
+    mid:
+      fresher: -10
+      junior: 0
+      mid: 15
+      senior: 10
+    senior:
+      fresher: -15
+      junior: -10
+      mid: 5
+      senior: 20
+    any:
+      fresher: 10
+      junior: 10
+      mid: 10
+      senior: 10
+
+location:
+  india_positive:
+    - "remote"
+    - "worldwide"
+    - "anywhere"
+    - "global"
+    - "apac"
+    - "bangladesh"
+    - "india"
+    - "asia"
+    - "emea"
+    - "remote - worldwide"
+    - "work from anywhere"
+  india_negative:
+    - "us only"
+    - "usa only"
+    - "us-only"
+    - "united states only"
+    - "must be located in the us"
+    - "must reside in the us"
+    - "us-based"
+    - "canada only"
+    - "uk only"
+    - "eu only"
+    - "europe only"
+    - "must be authorized to work in the united states"
+    - "no visa sponsorship"
+    - "us citizen"
+  timezone_compatible:
+    - "gmt"
+    - "utc"
+    - "cet"
+    - "eet"
+    - "ast"
+    - "flexible"
+    - "async"
+    - "asynchronous"
+    - "overlap"
+    - "any timezone"
+    - "all timezones"
+  timezone_incompatible:
+    - "pst only"
+    - "est only"
+    - "mst only"
+    - "us timezone required"
+
+outreach:
+  candidate_name: "Supto Mohammad Sabur Islam Khan"
+  candidate_core_tech:
+    - "Angular"
+    - "TypeScript"
+    - "RxJS"
+    - "Ionic"
+  candidate_extra_tech:
+    - "HTML5/CSS3"
+    - "Bootstrap"
+    - "Karma/Jasmine"
+    - "REST APIs"
+    - "Firebase"
+  linkedin_search_titles:
+    - title: "Engineering Manager"
+      label: "Eng Manager"
+      category: "engineering"
+    - title: "Frontend Lead"
+      label: "Frontend Lead"
+      category: "engineering"
+    - title: "Tech Lead"
+      label: "Tech Lead"
+      category: "engineering"
+    - title: "Head of Engineering"
+      label: "Head of Eng"
+      category: "engineering"
+    - title: "CTO"
+      label: "CTO"
+      category: "executive"
+    - title: "Technical Recruiter"
+      label: "Tech Recruiter"
+      category: "hr"
+  bio_short: "Angular specialist with 5+ years building production-grade, scalable Angular applications end to end"
+  achievements:
+    - "Singlehandedly designed and built LawSikho's flagship in-house Learning Management System (46+ modules) in Angular from scratch."
+    - "Architected an Angular + Ionic hybrid mobile strategy that cut mobile development overhead by 80% while shipping native Android/iOS apps."
+    - "Built student lifecycle dashboards, onboarding flows, and a high-traffic employment platform connecting recruiters with talent."
+    - "Optimized Angular state and reporting dashboards, reducing report generation time by 70% and automating financial workflows by 40%."
+  dm_short_template: "{greeting}, I noticed {company} is hiring for {title}. I'm an Angular specialist with 5+ years of experience — singlehandedly built a 46+ module enterprise LMS and high-performance dashboards. Would love to connect."
+  dm_long_template: |
+    {greeting},
+
+    I noticed {company} is hiring for {title}. Given my 5+ years specializing in Angular, TypeScript, and modern frontend architecture, the role looks like a great match.
+
+    A few key highlights from my work:
+    {achievements}
+
+    I'm available for remote roles with flexible timezone overlap. Would you be open to a brief conversation this week?
+
+    Best regards,
+    {candidate_name}
+  email_digest_subject_role: "Senior Angular Developer"
+  email_greeting: "Good morning, Supto 👋"
+  recipient_email: "suptokhan24@gmail.com"

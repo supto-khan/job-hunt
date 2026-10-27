@@ -18,6 +18,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "")
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
+FREEHIRE_API_KEY = os.getenv("FREEHIRE_API_KEY", "")
+FREEHIRE_ENABLED = os.getenv("FREEHIRE_ENABLED", "true").lower() in ("true", "1", "yes")
+FREEHIRE_WORK_MODE = os.getenv("FREEHIRE_WORK_MODE", "remote")
 
 # Notifications (Discord & Telegram)
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
@@ -28,7 +31,7 @@ NOTIFY_MIN_SCORE = int(os.getenv("NOTIFY_MIN_SCORE", "80"))
 # Email Settings (Gmail SMTP)
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
 SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "")
-RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL", "parmanandprajapati0009@gmail.com")
+RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL", "suptokhan24@gmail.com")
 
 # Daily digest scheduler
 DAILY_EMAIL_HOUR = int(os.getenv("DAILY_EMAIL_HOUR", "10"))   # 24-hour format (10 = 10:00 AM)
@@ -39,34 +42,34 @@ DAILY_JOBS_COUNT = int(os.getenv("DAILY_JOBS_COUNT", "15"))  # how many jobs in 
 GOOGLE_SHEETS_CREDS = os.getenv("GOOGLE_SHEETS_CREDS", "credentials.json")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "")
 
-# Search criteria defaults
+# Search criteria defaults — Supto's 3 Core Profiles (Angular, Full-Stack, Frontend)
 DEFAULT_SEARCH_TERMS = [
-    "backend developer python",
-    "python django developer",
-    "fastapi developer",
-    "backend engineer python",
-    "python developer",
+    "senior frontend developer",
+    "senior angular developer",
+    "senior full stack developer",
+    "frontend developer remote",
+    "react developer remote",
+    "angular developer remote",
+    "full stack engineer remote",
 ]
 
 RELEVANT_TECH = [
-    "python", "django", "fastapi", "flask", "celery", "redis",
-    "postgresql", "postgres", "mysql", "mongodb", "docker",
-    "kubernetes", "aws", "gcp", "rest", "graphql", "node",
-    "nodejs", "express", "sql", "nosql", "microservices",
-    "rabbitmq", "kafka", "elasticsearch",
+    "angular", "react", "nextjs", "next.js", "typescript", "javascript",
+    "tailwind", "css", "html5", "rxjs", "redux", "node", "nodejs",
+    "express", "laravel", "php", "rest", "graphql", "mysql", "postgresql",
+    "docker", "aws", "git", "vite", "webpack", "micro-frontends",
 ]
 
 TITLE_KEYWORDS_POSITIVE = [
-    "backend", "back-end", "back end", "python", "django",
-    "fastapi", "software engineer", "software developer",
-    "full stack", "fullstack", "full-stack", "api developer",
+    "frontend", "front-end", "front end", "angular", "react", "next.js",
+    "full stack", "fullstack", "full-stack", "software engineer",
+    "software developer", "web developer", "ui engineer", "javascript", "typescript",
 ]
 
 TITLE_KEYWORDS_NEGATIVE = [
-    "frontend", "front-end", "front end", "ios", "android",
-    "mobile", "devops", "data scientist", "machine learning",
-    "ml engineer", "ui/ux", "designer", "qa", "test",
-    "intern", "internship", "trainee", "junior",
+    "intern", "internship", "trainee", "unpaid", "volunteer",
+    "qa", "test automation", "tester", "data scientist", "machine learning",
+    "ml engineer", "devops engineer", "sysadmin", "hardware",
 ]
 
 # ── Location / Bangladesh Remote Filtering ──
@@ -92,7 +95,7 @@ LOCATION_BD_NEGATIVE = [
     "european union only", "uk-based", "eu-based",
     "must be authorized to work in the united states",
     "no visa sponsorship", "us citizen", "us work authorization",
-    "est/cst/pst", "americas only", "americas timezone",
+    "est/cst/pst", "americas only",
     "north america only", "na only", "latam only",
 ]
 

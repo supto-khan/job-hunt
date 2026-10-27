@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeHire Search — Job Hunter</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="alternate icon" type="image/png" href="/static/favicon.png">
+
+    <!-- Fonts & Tailwind CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Lexend', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#F0FDF9',
+                            surface: '#FFFFFF',
+                            primary: '#00A878',
+                            cta: '#00C896',
+                            accent: '#5EEAD4',
+                            muted: '#64748B',
+                            dark: '#0F1F17',
+                        },
+                        forest: {
+                            50: '#F0FDF9',
+                            100: '#E6FBF5',
+                            200: '#5EEAD4',
+                            400: '#00C896',
+                            600: '#00A878',
+                            800: '#008760',
+                            900: '#0F1F17',
+                        },
+                        mint: {
+                            50: '#F0FDF9',
+                            200: '#5EEAD4',
+                            400: '#00C896',
+                            600: '#00A878',
+                            800: '#0F1F17',
+                        },
+                        dark: {
+                            bg: '#F0FDF9',
+                            surface: '#FFFFFF',
+                            surface2: '#F8FAFC',
+                            border: '#E2E8F0',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="/static/style.css?v=10">
+    <style>
+        .ats-pill {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            background: rgba(0, 168, 120, 0.1);
+            color: #00A878;
+            border: 1px solid rgba(0, 168, 120, 0.25);
+        }
+        .mode-remote {
+            background: rgba(0, 168, 120, 0.12);
+            color: #008760;
+            border: 1px solid rgba(0, 168, 120, 0.3);
+        }
+        .mode-hybrid {
+            background: rgba(240, 165, 0, 0.12);
+            color: #b87600;
+            border: 1px solid rgba(240, 165, 0, 0.3);
+        }
+        .mode-onsite {
+            background: rgba(100, 116, 139, 0.12);
+            color: #64748B;
+            border: 1px solid rgba(100, 116, 139, 0.25);
+        }
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .filter-chip:hover {
+            border-color: var(--mint);
+            color: var(--mint);
+        }
+        .skill-chip {
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+        .skill-chip:hover {
+            border-color: #00A878;
+            color: #00A878;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div style="display:flex;align-items:center;gap:24px;">
+            <a href="/" class="brand-logo">
+                <img src="/static/favicon.svg" alt="Job Hunter Logo">
+                <h1>Job Hunter</h1>
+            </a>
+            <nav class="nav-tabs">
+                <a href="/" class="nav-tab">Jobs</a>
+                <a href="/outreach" class="nav-tab">Outreach</a>
+                <a href="/profile" class="nav-tab">Profile</a>
+                <a href="/freehire" class="nav-tab active">FreeHire</a>
+            </nav>
+        </div>
+        <div class="header-actions">
+            <span id="active-profile-indicator" style="font-size:12px;color:var(--text-muted);">Profile: Loading…</span>
+            <button class="btn btn-outline" onclick="loadProfileKeywords()">Load Profile Keywords</button>
+            <a href="/" class="btn btn-green">Go to Saved Jobs</a>
+        </div>
+    </div>
+
+    <!-- FreeHire Hero Banner -->
+    <div class="px-4 sm:px-8 pt-5 pb-2">
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span class="ats-pill">Direct ATS Search</span>
+                    <span class="text-xs text-brand-primary font-semibold">3.3M+ Live Postings &middot; 470k+ Companies &middot; 124 Platforms</span>
+                </div>
+                <h2 class="text-lg font-bold text-brand-dark tracking-tight">FreeHire Live Search &amp; Direct Ingestion</h2>
+                <p class="text-xs text-brand-muted mt-1 max-w-2xl leading-relaxed">
+                    Query the FreeHire live search engine straight from company careers pages (Greenhouse, Lever, Ashby, Workday, Personio). Filter by seniority, skills, and work format, then import high-match postings directly into your pipeline with 1 click.
+                </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-brand-primary font-medium">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-cta opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-primary"></span>
+                    </span>
+                    <span>FreeHire API Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FreeHire Comprehensive Filter Controls -->
+    <div class="filters px-4 sm:px-8 py-3 flex-wrap">
+        <!-- Search Keyword -->
+        <div class="filter-group" style="flex: 2; min-width: 220px;">
+            <label>Keyword / Title</label>
+            <div class="relative">
+                <input type="text" id="fh-query" placeholder="e.g. backend developer python, fastapi..." onkeydown="if(event.key==='Enter') executeSearch(0)">
+            </div>
+        </div>
+
+        <!-- Work Mode -->
+        <div class="filter-group" style="min-width: 140px;">
+            <label>Work Mode</label>
+            <select id="fh-work-mode" onchange="executeSearch(0)">
+                <option value="remote" selected>Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">On-site</option>
+                <option value="all">All Formats</option>
+            </select>
+        </div>
+
+        <!-- Seniority -->
+        <div class="filter-group" style="min-width: 150px;">
+            <label>Seniority</label>
+            <select id="fh-seniority" onchange="executeSearch(0)">
+                <option value="all" selected>All Seniorities</option>
+                <option value="intern">Intern / Trainee</option>
+                <option value="junior">Junior (0-2 YOE)</option>
+                <option value="middle">Mid-level (2-5 YOE)</option>
+                <option value="senior">Senior (5+ YOE)</option>
+                <option value="lead">Lead / Staff</option>
+                <option value="principal">Principal</option>
+            </select>
+        </div>
+
+        <!-- Region -->
+        <div class="filter-group" style="min-width: 140px;">
+            <label>Region</label>
+            <select id="fh-region" onchange="executeSearch(0)">
+                <option value="all" selected>Any Region</option>
+                <option value="apac">APAC (Asia Pacific)</option>
+                <option value="eu">Europe (EU)</option>
+                <option value="na">North America</option>
+                <option value="latam">Latin America</option>
+                <option value="mena">Middle East</option>
+            </select>
+        </div>
+
+        <!-- Category -->
+        <div class="filter-group" style="min-width: 160px;">
+            <label>Role Category</label>
+            <select id="fh-category" onchange="executeSearch(0)">
+                <option value="all" selected>All Categories</option>
+                <option value="software_engineering">Software Engineering</option>
+                <option value="backend">Backend</option>
+                <option value="frontend">Frontend</option>
+                <option value="devops">DevOps / Cloud</option>
+                <option value="ai_ml">AI / ML / Data</option>
+                <option value="mobile">Mobile (iOS / Android)</option>
+                <option value="qa">QA / Testing</option>
+            </select>
+        </div>
+
+        <!-- Posted Within -->
+        <div class="filter-group" style="min-width: 130px;">
+            <label>Posted</label>
+            <select id="fh-posted" onchange="executeSearch(0)">
+                <option value="1">Last 24 Hours</option>
+                <option value="3">Last 3 Days</option>
+                <option value="7">Last 7 Days</option>
+                <option value="14" selected>Last 14 Days</option>
+                <option value="30">Last 30 Days</option>
+                <option value="0">Anytime</option>
+            </select>
+        </div>
+
+        <!-- Skills Input -->
+        <div class="filter-group" style="flex: 1.5; min-width: 200px;">
+            <label>Skills (comma-separated)</label>
+            <input type="text" id="fh-skills" placeholder="e.g. python, django, docker" onkeydown="if(event.key==='Enter') executeSearch(0)">
+        </div>
+
+        <!-- Skills Mode -->
+        <div class="filter-group" style="min-width: 100px;">
+            <label>Skills Mode</label>
+            <select id="fh-skills-mode" onchange="executeSearch(0)">
+                <option value="or" selected>OR</option>
+                <option value="and">AND</option>
+            </select>
+        </div>
+
+        <!-- Actions -->
+        <div class="filter-group" style="flex-direction: row; align-items: flex-end; gap: 8px;">
+            <button class="btn btn-primary" onclick="executeSearch(0)" id="btn-search">
+                <span id="btn-search-text">Search FreeHire</span>
+            </button>
+            <button class="btn btn-outline" onclick="resetFhFilters()">Reset</button>
+        </div>
+    </div>
+
+    <!-- Active Filters & Summary Bar -->
+    <div class="px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between text-xs text-brand-muted border-b border-slate-200 gap-2">
+        <div id="search-status-text" class="flex items-center gap-2">
+            <span>Ready to search.</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="fh-page-info">Page 1</span>
+            <label class="flex items-center gap-1.5">
+                <span>Per page:</span>
+                <select id="fh-limit" onchange="executeSearch(0)" class="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs text-brand-dark">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </label>
+        </div>
+    </div>
+
+    <!-- Main Content List -->
+    <div class="content">
+        <div id="fh-job-list" class="flex flex-col gap-3">
+            <div class="empty-state py-12 text-center">
+                <div class="text-4xl mb-3">🔍</div>
+                <h3 class="text-base font-semibold text-brand-dark mb-1">Search 3.3 Million+ Live Direct ATS Postings</h3>
+                <p class="text-xs text-brand-muted max-w-md mx-auto">
+                    Type a keyword, select your work format, or click <button onclick="loadProfileKeywords()" class="text-brand-primary underline font-medium">Load Profile Keywords</button> to find fresh jobs matched to your candidate persona.
+                </p>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination flex items-center justify-center gap-3 mt-6" id="fh-pagination" hidden>
+            <button class="btn btn-outline btn-sm" id="btn-prev" onclick="prevFhPage()">← Previous</button>
+            <span id="fh-pagination-label" class="text-xs text-brand-muted">Page 1</span>
+            <button class="btn btn-outline btn-sm" id="btn-next" onclick="nextFhPage()">Next →</button>
+        </div>
+    </div>
+
+    <!-- Job Detail Modal -->
+    <div class="modal-overlay" id="fh-modal-overlay" onclick="if(event.target===this)closeFhModal()">
+        <div class="modal" id="fh-modal-content" style="width: 760px; max-width: 90vw; max-height: 85vh; overflow-y: auto;"></div>
+    </div>
+
+    <script src="/static/freehire.js?v=2"></script>
+</body>
+</html>

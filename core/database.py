@@ -328,6 +328,7 @@ def get_jobs(
     tech: Optional[str] = None,
     company_domain: Optional[str] = None,
     seen_after: Optional[str] = None,
+    profile_id: Optional[int] = None,
     limit: int = 100,
     offset: int = 0,
 ) -> List[Dict[str, Any]]:
@@ -335,6 +336,10 @@ def get_jobs(
     try:
         query = "SELECT * FROM jobs WHERE relevance_score >= %s"
         params: list = [min_score]
+
+        if profile_id:
+            query += " AND scored_profile_id = %s"
+            params.append(profile_id)
 
         if status:
             query += " AND status = %s"

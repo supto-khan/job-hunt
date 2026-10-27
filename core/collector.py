@@ -26,6 +26,7 @@ from sources.recruitee import RecruiteeSource
 from sources.bamboohr import BambooHRSource
 from sources.smartrecruiters import SmartRecruitersSource
 from sources.adzuna import AdzunaSource
+from sources.freehire import FreeHireSource
 from config.settings import RAPIDAPI_KEY
 
 # Days before a job not re-seen gets deleted (cleanup). Could be profile-driven
@@ -40,6 +41,7 @@ def log(msg):
 def _build_job_board_sources() -> list:
     """Build the list of sources fresh each run so JSearch uses current queries."""
     sources = [
+        FreeHireSource(),
         RemotiveSource(),
         RemoteOKSource(),
         ArbeitnowSource(),
@@ -54,21 +56,23 @@ def _build_job_board_sources() -> list:
         AdzunaSource(),
     ]
     if RAPIDAPI_KEY:
-        # Queries come from the active profile (single source of truth).
-        profile = get_active_profile()
-        profile_queries = (profile.get("search") or {}).get("jsearch_default_queries") or []
-        queries = [
-            {
-                "query": q["query"],
-                "country": q.get("country", "BD"),
-                "date_posted": q.get("date_posted", "3days"),
-                **({"remote_jobs_only": "true"} if q.get("remote_jobs_only") else {}),
-            }
-            for q in profile_queries
-            if q.get("query") and q.get("enabled", True)
-        ]
-        if queries:
-            sources.append(JSearchSource(queries=queries))
+        try:
+            profile = get_active_profile()
+            profile_queries = (profile.get("search") or {}).get("jsearch_default_queries") or []
+            queries = [
+                {
+                    "query": q["query"],
+                    "country": q.get("country", "BD"),
+                    "date_posted": q.get("date_posted", "3days"),
+                    **({"remote_jobs_only": "true"} if q.get("remote_jobs_only") else {}),
+                }
+                for q in profile_queries
+                if q.get("query") and q.get("enabled", True)
+            ]
+            if queries:
+                sources.append(JSearchSource(queries=queries))
+        except Exception as e:
+            log(f"  [WARN] JSearch profile query load failed: {e}")
     return sources
 
 COMPANY_CRAWL_CONCURRENCY = 5
@@ -274,3 +278,148 @@ async def run_collection(include_companies: bool = True) -> dict:
     log("Collection complete!")
     log("=" * 50)
     return total
+
+
+async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
+    """24/7 continuous search & scoring pipeline across all 3 candidate profiles."""
+    from core.profile import get_hunting_profiles
+    from core.emailer import generate_outreach_for_top_jobs
+    import json
+
+    init_db()
+    profiles = get_hunting_profiles()
+    if not profiles:
+        log("[24/7 Hunt] No candidate profiles found.")
+        return {}
+
+    log("=" * 60)
+    log(f"⚡ [24/7 Remote Job Hunt] Starting cycle across {len(profiles)} candidate profiles...")
+    for p in profiles:
+        log(f"  • Candidate Profile #{p.get('_id')}: {p.get('_name')}")
+
+    # 1. Aggregate unique search terms across all profiles for FreeHire
+    all_terms: list[str] = []
+    for p in profiles:
+        terms = (p.get("search") or {}).get("default_terms") or []
+        all_terms.extend(terms[:4])
+
+    seen_terms = set()
+    deduped_terms: list[str] = []
+    for t in all_terms:
+        clean = t.strip().lower()
+        if clean and clean not in seen_terms:
+            seen_terms.add(clean)
+            deduped_terms.append(t)
+
+    # 2. Build multi-source list with FreeHire querying all profile terms
+    sources = [
+        FreeHireSource(queries=deduped_terms, work_mode="remote" if remote_only else None, limit_per_query=50),
+        RemotiveSource(),
+        RemoteOKSource(),
+        ArbeitnowSource(),
+        HackerNewsSource(),
+        RSSSource(),
+        JobicySource(),
+        GreenhouseSource(),
+        LeverSource(),
+        AshbySource(),
+        WorkableSource(),
+        SmartRecruitersSource(),
+        AdzunaSource(),
+    ]
+
+    log(f"  Gathering live remote postings from {len(sources)} sources...")
+    tasks = [_fetch_from_source(src) for src in sources]
+    results = await asyncio.gather(*tasks)
+
+    all_jobs: list[Job] = []
+    for r in results:
+        all_jobs.extend(r)
+
+    # Filter strictly for remote if remote_only is True
+    if remote_only:
+        filtered_jobs = []
+        for j in all_jobs:
+            loc_str = (j.location or "").lower()
+            title_str = (j.title or "").lower()
+            desc_str = (j.description or "").lower()
+            wm = getattr(j, "work_mode", "")
+            # If explicit remote flag, or contains 'remote' or 'anywhere' or 'worldwide'
+            if wm == "remote" or "remote" in loc_str or "anywhere" in loc_str or "worldwide" in loc_str or "remote" in title_str or "100% remote" in desc_str:
+                filtered_jobs.append(j)
+            elif not wm and not loc_str:  # Unspecified location on remote job boards
+                filtered_jobs.append(j)
+        all_jobs = filtered_jobs
+
+    log(f"  Total remote postings fetched across all sources: {len(all_jobs)}")
+
+    # 3. Score against each candidate profile and generate tailored outreach
+    results_by_profile = {}
+    high_matches_total = []
+
+    for prof in profiles:
+        prof_name = prof.get("_name")
+        prof_id = prof.get("_id")
+        prof_stats = {
+            "fetched": len(all_jobs),
+            "new": 0,
+            "updated": 0,
+            "filtered_out": 0,
+            "new_high_matches": [],
+        }
+
+        # Score & store matching jobs for this profile
+        _score_and_store(all_jobs, prof_stats, profile=prof)
+
+        # Generate outreach for this profile
+        outreach_gen = 0
+        try:
+            outreach_gen = generate_outreach_for_top_jobs(limit=5, profile=prof)
+        except Exception as e:
+            log(f"  [WARN] Outreach generation error for {prof_name}: {e}")
+
+        results_by_profile[prof_name] = {
+            "profile_id": prof_id,
+            "new": prof_stats["new"],
+            "updated": prof_stats["updated"],
+            "filtered_out": prof_stats["filtered_out"],
+            "high_matches": len(prof_stats.get("new_high_matches", [])),
+            "outreach_generated": outreach_gen,
+        }
+        high_matches_total.extend(prof_stats.get("new_high_matches", []))
+
+    # 4. Cleanup stale postings
+    deleted = cleanup_old_jobs(days=STALE_JOB_DAYS)
+
+    # 5. Send alerts if any high match discovered
+    if high_matches_total:
+        try:
+            from core.notifications import send_instant_job_alerts
+            send_instant_job_alerts(high_matches_total)
+        except Exception as e:
+            log(f"  [WARN] Alert error: {e}")
+
+    # Record last run in app_settings
+    try:
+        from core.database import get_connection
+        conn = get_connection()
+        with conn.cursor() as cur:
+            ts = datetime.utcnow().isoformat()
+            cur.execute(
+                "INSERT INTO app_settings (`key`, `value`, updated_at) "
+                "VALUES ('24_7_last_run', %s, %s) "
+                "ON DUPLICATE KEY UPDATE `value`=VALUES(`value`), updated_at=VALUES(updated_at)",
+                (json.dumps({
+                    "timestamp": ts,
+                    "total_fetched": len(all_jobs),
+                    "profiles": results_by_profile,
+                }), ts)
+            )
+        conn.close()
+    except Exception as e:
+        log(f"  [WARN] Could not update 24_7_last_run setting: {e}")
+
+    log(f"⚡ [24/7 Remote Job Hunt] Complete! Summary: {results_by_profile}")
+    log("=" * 60)
+    return results_by_profile
+

@@ -1,0 +1,232 @@
+name: "Supto — Senior Full-Stack Developer"
+description: "Full-Stack Developer with 5+ years architecting scalable web and mobile ecosystems: Angular/React frontend, Node.js/Laravel backend, MySQL/Redis, and GenAI automation pipelines."
+schema_version: 1
+
+search:
+  default_terms:
+    - "senior full stack developer"
+    - "full stack developer"
+    - "full-stack engineer"
+    - "full stack angular node"
+    - "full stack react laravel"
+    - "senior software engineer"
+    - "senior web developer"
+  title_keywords_positive:
+    - "full stack"
+    - "fullstack"
+    - "full-stack"
+    - "senior full stack"
+    - "software engineer"
+    - "web developer"
+    - "angular"
+    - "react"
+    - "node"
+    - "nodejs"
+    - "laravel"
+  title_keywords_negative:
+    - "intern"
+    - "internship"
+    - "junior"
+    - "entry level"
+    - "trainee"
+    - "unpaid"
+    - "volunteer"
+    - "wordpress"
+    - "shopify only"
+    - "sales"
+    - "marketing"
+  relevant_tech:
+    - "angular"
+    - "react"
+    - "typescript"
+    - "javascript"
+    - "node.js"
+    - "laravel"
+    - "php"
+    - "mysql"
+    - "mariadb"
+    - "mongodb"
+    - "redis"
+    - "docker"
+    - "rest api"
+    - "graphql"
+    - "microservices"
+    - "vps"
+    - "nginx"
+    - "ci/cd"
+    - "git"
+    - "generative ai"
+    - "llm"
+  jsearch_default_queries:
+    - query: "Senior Full Stack Developer"
+      country: "US"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+    - query: "Full-Stack Engineer remote"
+      country: "GB"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+    - query: "Full Stack Developer Angular Node remote"
+      country: "BD"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+
+scoring:
+  experience_target: "senior"
+  min_relevance_score: 50
+  min_score_to_store: 25
+  weights:
+    title: 35
+    tech: 35
+    experience: 15
+    signal: 15
+  core_tech:
+    - "angular"
+    - "react"
+    - "node.js"
+    - "laravel"
+    - "php"
+    - "typescript"
+    - "mysql"
+    - "redis"
+  backend_signals:
+    - "microservices"
+    - "system design"
+    - "generative ai"
+    - "vps"
+    - "saas"
+    - "ecommerce"
+    - "api design"
+    - "performance tuning"
+    - "optimization"
+  experience_bonuses:
+    fresher:
+      fresher: 15
+      junior: 10
+      mid: 0
+      senior: -5
+    junior:
+      fresher: 5
+      junior: 15
+      mid: 5
+      senior: -5
+    mid:
+      fresher: -10
+      junior: 0
+      mid: 15
+      senior: 10
+    senior:
+      fresher: -15
+      junior: -10
+      mid: 5
+      senior: 20
+    any:
+      fresher: 10
+      junior: 10
+      mid: 10
+      senior: 10
+
+location:
+  india_positive:
+    - "remote"
+    - "worldwide"
+    - "anywhere"
+    - "global"
+    - "apac"
+    - "bangladesh"
+    - "india"
+    - "asia"
+    - "emea"
+    - "remote - worldwide"
+    - "work from anywhere"
+  india_negative:
+    - "us only"
+    - "usa only"
+    - "us-only"
+    - "united states only"
+    - "must be located in the us"
+    - "must reside in the us"
+    - "us-based"
+    - "canada only"
+    - "uk only"
+    - "eu only"
+    - "must be authorized to work in the united states"
+    - "no visa sponsorship"
+    - "us citizen"
+  timezone_compatible:
+    - "gmt"
+    - "utc"
+    - "cet"
+    - "eet"
+    - "ast"
+    - "flexible"
+    - "async"
+    - "asynchronous"
+    - "overlap"
+    - "any timezone"
+    - "all timezones"
+  timezone_incompatible:
+    - "pst only"
+    - "est only"
+    - "mst only"
+    - "us timezone required"
+
+outreach:
+  candidate_name: "Supto Mohammad Sabur Islam Khan"
+  candidate_core_tech:
+    - "Angular"
+    - "React"
+    - "Node.js"
+    - "Laravel"
+    - "TypeScript"
+  candidate_extra_tech:
+    - "MySQL"
+    - "MongoDB"
+    - "Redis"
+    - "Docker"
+    - "VPS Administration"
+    - "Generative AI"
+  linkedin_search_titles:
+    - title: "Engineering Manager"
+      label: "Eng Manager"
+      category: "engineering"
+    - title: "Tech Lead"
+      label: "Tech Lead"
+      category: "engineering"
+    - title: "Head of Engineering"
+      label: "Head of Eng"
+      category: "engineering"
+    - title: "CTO"
+      label: "CTO"
+      category: "executive"
+    - title: "VP Engineering"
+      label: "VP Eng"
+      category: "executive"
+    - title: "Technical Recruiter"
+      label: "Tech Recruiter"
+      category: "hr"
+  bio_short: "Full-Stack Developer with 5+ years architecting web & mobile ecosystems from database schema through UI to deployment"
+  achievements:
+    - "Engineered 25+ full-stack applications across frontend UI, backend microservices, and VPS infrastructure."
+    - "Architected GenAI-powered Transcript Generator and Teacher Analytics pipelines with GPT models, automating 100+ monthly manual hours."
+    - "Built custom Book-a-Call scheduling engine and Firebase-powered push notification system eliminating third-party SaaS fees."
+    - "Designed and shipped 46+ module Angular LMS and multi-vendor ecommerce platforms with Redis caching and sub-second load times."
+  dm_short_template: "{greeting}, I noticed {company} is hiring for {title}. I'm a Senior Full-Stack Developer with 5+ years of experience building scalable Angular/React + Node/Laravel platforms and GenAI pipelines. Would love to connect."
+  dm_long_template: |
+    {greeting},
+
+    I noticed {company} is hiring for {title}. Given my 5+ years building full-stack platforms across {stack}, database architecture, and production deployments, the role looks like an excellent fit.
+
+    A few recent systems I've delivered:
+    {achievements}
+
+    I am available for remote positions and comfortably overlap with US/EU business hours. Would you be open to a 15-minute introductory call?
+
+    Best regards,
+    {candidate_name}
+  email_digest_subject_role: "Senior Full-Stack Developer"
+  email_greeting: "Good morning, Supto 👋"
+  recipient_email: "suptokhan24@gmail.com"

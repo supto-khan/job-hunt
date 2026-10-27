@@ -20,33 +20,36 @@
                         sans: ['Lexend', 'sans-serif'],
                     },
                     colors: {
+                        brand: {
+                            bg: '#F0FDF9',
+                            surface: '#FFFFFF',
+                            primary: '#00A878',
+                            cta: '#00C896',
+                            accent: '#5EEAD4',
+                            muted: '#64748B',
+                            dark: '#0F1F17',
+                        },
                         forest: {
-                            50: '#e8f5ef',
-                            100: '#b8e0cb',
-                            200: '#7dc4a4',
-                            400: '#2e9e6b',
-                            600: '#1a7a4e',
-                            800: '#0d5534',
-                            900: '#073822',
+                            50: '#F0FDF9',
+                            100: '#E6FBF5',
+                            200: '#5EEAD4',
+                            400: '#00C896',
+                            600: '#00A878',
+                            800: '#008760',
+                            900: '#0F1F17',
                         },
                         mint: {
-                            50: '#e0f7f2',
-                            200: '#8de8d4',
-                            400: '#34c9ac',
-                            600: '#0e9f84',
-                            800: '#066b58',
-                        },
-                        gold: {
-                            50: '#fef9e7',
-                            200: '#fcd96a',
-                            500: '#f0a500',
-                            700: '#b87600',
+                            50: '#F0FDF9',
+                            200: '#5EEAD4',
+                            400: '#00C896',
+                            600: '#00A878',
+                            800: '#0F1F17',
                         },
                         dark: {
-                            bg: '#0b1e16',
-                            surface: '#14211b',
-                            surface2: '#1c2b24',
-                            border: '#28352f',
+                            bg: '#F0FDF9',
+                            surface: '#FFFFFF',
+                            surface2: '#F8FAFC',
+                            border: '#E2E8F0',
                         }
                     }
                 }
@@ -58,7 +61,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <link rel="stylesheet" href="/static/style.css?v=8">
+    <link rel="stylesheet" href="/static/style.css?v=10">
 </head>
 <body>
     <!-- Header -->
@@ -72,6 +75,7 @@
                 <a href="/" class="nav-tab active">Jobs</a>
                 <a href="/outreach" class="nav-tab">Outreach</a>
                 <a href="/profile" class="nav-tab">Profile</a>
+                <a href="/freehire" class="nav-tab">FreeHire</a>
             </nav>
         </div>
         <div class="header-actions">
@@ -89,6 +93,38 @@
         </div>
     </div>
 
+    <!-- 24/7 Automated Remote Hunter Status Bar -->
+    <div class="px-4 sm:px-8 pt-4 pb-2">
+        <div class="bg-white border border-emerald-200/90 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/50 via-white to-emerald-50/30">
+            <div class="flex items-center gap-3">
+                <span class="relative flex h-3.5 w-3.5 shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-cta opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-brand-primary"></span>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs sm:text-sm font-bold text-brand-dark">24/7 Automated Remote Job Hunter</span>
+                        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Active &middot; Every 2 Hours</span>
+                        <span class="text-xs text-brand-muted">Strictly Remote Postings Worldwide</span>
+                    </div>
+                    <div class="text-xs text-brand-muted mt-1 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1 font-medium text-brand-dark">🎯 <span>CV 1:</span> Senior Angular</span>
+                        <span class="text-slate-300">&bull;</span>
+                        <span class="inline-flex items-center gap-1 font-medium text-brand-dark">🎯 <span>CV 2:</span> Senior Full-Stack</span>
+                        <span class="text-slate-300">&bull;</span>
+                        <span class="inline-flex items-center gap-1 font-medium text-brand-dark">🎯 <span>CV 3:</span> Frontend Developer</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span id="hunt-status-detail" class="text-xs text-brand-muted hidden sm:inline">Next cycle: scheduled</span>
+                <button onclick="triggerHuntAll()" id="btn-hunt-all" class="btn btn-outline btn-sm text-brand-primary border-brand-primary/40 hover:bg-emerald-50 flex items-center gap-1.5 font-semibold">
+                    <span>⚡</span> Run 24/7 Hunt Now
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Stats -->
     <div class="stats-bar" id="stats-bar">
         <div class="stat-card">
@@ -98,30 +134,30 @@
     </div>
 
     <!-- Analytics Dashboard Charts Grid -->
-    <div x-data="{ showAnalytics: true }" class="px-8 my-4">
+    <div x-data="{ showAnalytics: true }" class="px-4 sm:px-8 my-4">
         <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-semibold text-mint-400 tracking-wide uppercase flex items-center gap-2">
-                <span>📊</span> Analytics & Match Insights
+            <h3 class="text-xs sm:text-sm font-bold text-brand-dark tracking-wide uppercase flex items-center gap-2">
+                <span>📊</span> Analytics &amp; Match Insights
             </h3>
-            <button @click="showAnalytics = !showAnalytics" class="text-xs text-forest-200 hover:text-white transition">
+            <button @click="showAnalytics = !showAnalytics" class="text-xs text-brand-muted hover:text-brand-primary font-semibold transition">
                 <span x-text="showAnalytics ? 'Collapse Charts ▲' : 'Expand Charts ▼'"></span>
             </button>
         </div>
         <div x-show="showAnalytics" x-transition class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-lg">
-                <h4 class="text-xs font-medium text-gray-400 mb-3">Jobs Scraped by Source</h4>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                <h4 class="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-3">Jobs Scraped by Source</h4>
                 <div class="relative h-48">
                     <canvas id="chart-sources"></canvas>
                 </div>
             </div>
-            <div class="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-lg">
-                <h4 class="text-xs font-medium text-gray-400 mb-3">Top Tech Stacks Found</h4>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                <h4 class="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-3">Top Tech Stacks Found</h4>
                 <div class="relative h-48">
                     <canvas id="chart-tech"></canvas>
                 </div>
             </div>
-            <div class="bg-dark-surface border border-dark-border rounded-xl p-4 shadow-lg">
-                <h4 class="text-xs font-medium text-gray-400 mb-3">Outreach Pipeline Funnel</h4>
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                <h4 class="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-3">Outreach Pipeline Funnel</h4>
                 <div class="relative h-48 flex justify-center items-center">
                     <canvas id="chart-outreach"></canvas>
                 </div>
@@ -131,6 +167,12 @@
 
     <!-- Filters -->
     <div class="filters">
+        <div class="filter-group" style="min-width: 170px;">
+            <label>Candidate Profile (CV)</label>
+            <select id="filter-profile" onchange="applyFilters()">
+                <option value="">All 3 CV Profiles</option>
+            </select>
+        </div>
         <div class="filter-group">
             <label>Search</label>
             <input type="text" id="filter-search" placeholder="Title, company...">

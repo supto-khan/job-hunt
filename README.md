@@ -19,28 +19,34 @@ An automated job discovery, relevance scoring, and cold outreach platform built 
  ┌──────────────┐                 ┌──────────────┐                ┌──────────────┐
  │ Job Scraping │                 │ Profile Engine│                │ UI Analytics │
  └──────────────┘                 └──────────────┘                └──────────────┘
-   • JSearch (RapidAPI)             • Custom Scoring Weights        • Forest Green Theme
+   • FreeHire (124+ ATSs)           • Custom Scoring Weights        • Forest Green Theme
    • Remotive & RemoteOK            • BD/India Remote Classifier    • Chart.js Visuals
    • 150+ ATS Crawlers              • Automated LinkedIn Outreach   • Lexend Typography
    • Greenhouse / Lever / Ashby     • Persona Switcher (YAML)       • Alpine.js Controls
 ```
 
-- 🎨 **Modern SaaS UI**: Styled with **Forest Green & Mint / Warm Gold** palette, Google Font **Lexend**, **Tailwind CSS**, and **Alpine.js**.
+- 🎨 **Modern SaaS UI**: Styled with **Brand Emerald & Mint** palette (`#00A878`, `#00C896`, `#5EEAD4`, `#F0FDF9`), Google Font **Lexend**, **Tailwind CSS**, and **Alpine.js**.
 - 📊 **Interactive Analytics Dashboard**: Live **Chart.js** visualizations for *Jobs Scraped by Source*, *Top Tech Stacks Found*, and *Outreach Conversion Funnel*.
-- 🎯 **Multi-Profile System**: Dynamic YAML preset importer for switching between candidate roles (*Backend Python*, *Frontend React*, *Fresher*).
-- 🗄️ **Flexible Database**: Supports both **MySQL** (for production deployment) and **SQLite** (for zero-config local runs) with included migration scripts.
-- ⚡ **Cold Outreach Automation**: Automatically builds targeted LinkedIn search queries and writes candidate DM templates per job listing.
+- ⚡ **24/7 Automated Remote Job Hunter**: Continuously scans every 2 hours across all 3 candidate CV profiles strictly for remote positions worldwide with instant alert triggers.
+- 🎯 **Multi-CV Candidate Profiles**: Built from real candidate resumes:
+  1. **Supto — Senior Angular Developer (5+ YOE)** (LMS, TypeScript, RxJS, Ionic hybrid mobile)
+  2. **Supto — Senior Full-Stack Developer (5+ YOE)** (Angular, React, Node.js, Laravel/PHP, GenAI)
+  3. **Supto — Frontend Developer (5+ YOE)** (React, Next.js, Angular, TypeScript, Tailwind, UI Architecture)
+- 🗄️ **MySQL Database**: Production-grade persistence with full support for profile tagging and outreach history.
 - 📬 **Scheduled Email Digest**: Daily morning digests delivered straight to your inbox via Gmail SMTP.
 
 ---
 
 ## 🎨 Design System & Palette
 
-- **Primary — Forest Green:** `#1A7A4E` (CTAs), `#0D5534` (Hover accents), `#073822` (Nav header).
-- **Secondary — Mint / Cyan:** `#34C9AC` (Icons, active links), `#0E9F84` (Borders), `#8DE8D4` (Tag chips).
-- **Accent — Warm Gold:** `#F0A500` (Ratings & Score pills), `#FCD96A` (Badges).
-- **Dark Surface:** `#0B1E16` (Deep page background), `#14211B` (Card containers).
-- **Typography:** Google Font **[Lexend](https://fonts.google.com/specimen/Lexend)**.
+- **Background:** `--color-brand-bg: #F0FDF9`
+- **Surface:** `--color-brand-surface: #FFFFFF`
+- **Primary:** `--color-brand-primary: #00A878`
+- **CTA:** `--color-brand-cta: #00C896`
+- **Accent:** `--color-brand-accent: #5EEAD4`
+- **Muted:** `--color-brand-muted: #64748B`
+- **Dark:** `--color-brand-dark: #0F1F17`
+- **Typography:** Google Font **[Lexend](https://fonts.google.com/specimen/Lexend)**
 
 ---
 
@@ -126,9 +132,9 @@ Open your browser at **`http://127.0.0.1:8000`**.
 ### 3. Profiles (`/profile`)
 - Switch active target role profiles on the fly.
 - Import YAML presets from `profiles/`:
-  - `backend_python.yaml` (Backend Python 3+ YOE)
-  - `frontend_react.yaml` (Frontend React / TypeScript)
-  - `fresher_any.yaml` (Entry-level / 0-1 YOE)
+  - `supto_angular.yaml` (CV 1: Senior Angular Developer)
+  - `supto_fullstack.yaml` (CV 2: Senior Full-Stack Developer)
+  - `supto_frontend.yaml` (CV 3: Frontend Developer)
 - Run **Re-score All Jobs** to re-index all stored database jobs against newly updated scoring weights.
 
 ---

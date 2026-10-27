@@ -2,7 +2,7 @@ const state = {
     jobs: [],
     stats: {},
     sources: [],
-    filters: { source: '', status: '', min_score: 0, search: '', location: '', tech: '', bd_friendly: '' },
+    filters: { source: '', status: '', min_score: 0, search: '', location: '', tech: '', bd_friendly: '', profile_id: '' },
     offset: 0,
     limit: 50,
     collecting: false,
@@ -24,6 +24,7 @@ async function loadJobs() {
     if (f.location) params.set('location', f.location);
     if (f.tech) params.set('tech', f.tech);
     if (f.bd_friendly) params.set('bd_friendly', f.bd_friendly);
+    if (f.profile_id) params.set('profile_id', f.profile_id);
     params.set('limit', state.limit);
     params.set('offset', state.offset);
 
@@ -199,10 +200,10 @@ function renderAnalyticsCharts(s) {
                 datasets: [{
                     label: 'Jobs',
                     data,
-                    backgroundColor: '#1a7a4e',
-                    borderColor: '#34c9ac',
+                    backgroundColor: '#00A878',
+                    borderColor: '#00C896',
                     borderWidth: 1,
-                    borderRadius: 4
+                    borderRadius: 6
                 }]
             },
             options: {
@@ -210,8 +211,8 @@ function renderAnalyticsCharts(s) {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { display: false } },
-                    y: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { color: '#28352f' } }
+                    x: { ticks: { color: '#64748B', font: { family: 'Lexend' } }, grid: { display: false } },
+                    y: { ticks: { color: '#64748B', font: { family: 'Lexend' } }, grid: { color: '#E2E8F0' } }
                 }
             }
         });
@@ -230,10 +231,10 @@ function renderAnalyticsCharts(s) {
                 datasets: [{
                     label: 'Frequency',
                     data,
-                    backgroundColor: '#34c9ac',
-                    borderColor: '#0e9f84',
+                    backgroundColor: '#5EEAD4',
+                    borderColor: '#00A878',
                     borderWidth: 1,
-                    borderRadius: 4
+                    borderRadius: 6
                 }]
             },
             options: {
@@ -242,8 +243,8 @@ function renderAnalyticsCharts(s) {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { color: '#28352f' } },
-                    y: { ticks: { color: '#9eaba4', font: { family: 'Lexend' } }, grid: { display: false } }
+                    x: { ticks: { color: '#64748B', font: { family: 'Lexend' } }, grid: { color: '#E2E8F0' } },
+                    y: { ticks: { color: '#64748B', font: { family: 'Lexend' } }, grid: { display: false } }
                 }
             }
         });
@@ -263,14 +264,14 @@ function renderAnalyticsCharts(s) {
             const ctx = outreachCanvas.getContext('2d');
             ctx.clearRect(0, 0, outreachCanvas.width, outreachCanvas.height);
             ctx.font = '12px Lexend, sans-serif';
-            ctx.fillStyle = '#9eaba4';
+            ctx.fillStyle = '#64748B';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('No outreach items generated yet', outreachCanvas.width / 2 || 120, outreachCanvas.height / 2 || 80);
         } else {
             const labels = keys.map(k => k.charAt(0).toUpperCase() + k.slice(1));
             const data = Object.values(oStats);
-            const palette = ['#34c9ac', '#f0a500', '#1a7a4e', '#60a5fa', '#7dc4a4', '#ef4444'];
+            const palette = ['#00A878', '#00C896', '#5EEAD4', '#64748B', '#0F1F17', '#F59E0B'];
             const backgroundColor = labels.map((_, idx) => palette[idx % palette.length]);
 
             chartOutreachInstance = new Chart(outreachCanvas, {
@@ -280,14 +281,15 @@ function renderAnalyticsCharts(s) {
                     datasets: [{
                         data,
                         backgroundColor,
-                        borderWidth: 0
+                        borderWidth: 2,
+                        borderColor: '#FFFFFF'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'right', labels: { color: '#9eaba4', font: { family: 'Lexend', size: 11 } } }
+                        legend: { position: 'right', labels: { color: '#64748B', font: { family: 'Lexend', size: 11 } } }
                     }
                 }
             });
@@ -459,6 +461,8 @@ function applyFilters() {
     state.filters.location = document.getElementById('filter-location').value;
     state.filters.tech = document.getElementById('filter-tech').value;
     state.filters.bd_friendly = document.getElementById('filter-bd').value;
+    const profEl = document.getElementById('filter-profile');
+    state.filters.profile_id = profEl ? profEl.value : '';
     state.offset = 0;
     loadJobs();
 }
@@ -471,7 +475,9 @@ function resetFilters() {
     document.getElementById('filter-location').value = '';
     document.getElementById('filter-tech').value = '';
     document.getElementById('filter-bd').value = '';
-    state.filters = { source: '', status: '', min_score: 0, search: '', location: '', tech: '', bd_friendly: '' };
+    const profEl = document.getElementById('filter-profile');
+    if (profEl) profEl.value = '';
+    state.filters = { source: '', status: '', min_score: 0, search: '', location: '', tech: '', bd_friendly: '', profile_id: '' };
     state.offset = 0;
     loadJobs();
 }
@@ -699,6 +705,66 @@ async function toggleMark(jobId) {
     }
 }
 
+// ── 24/7 Remote Hunter Controls ──
+async function loadHuntStatus() {
+    const detailEl = document.getElementById('hunt-status-detail');
+    const profileSelect = document.getElementById('filter-profile');
+    try {
+        const data = await api('/hunt-status');
+        if (detailEl) {
+            let info = 'Every 2 hours &middot; Active';
+            if (data.last_run && data.last_run.total_fetched) {
+                info = `Last scan: ${data.last_run.total_fetched} remote jobs`;
+            }
+            detailEl.innerHTML = info;
+        }
+
+        // Populate profile filter
+        if (profileSelect && data.profiles && data.profiles.length) {
+            const currentVal = profileSelect.value;
+            profileSelect.innerHTML = '<option value="">All 3 CV Profiles</option>' +
+                data.profiles.map(p => `<option value="${p.id}" ${currentVal == p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+        }
+    } catch (e) {
+        console.warn('Could not load 24/7 hunt status:', e);
+    }
+}
+
+async function triggerHuntAll() {
+    const btn = document.getElementById('btn-hunt-all');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span>⚡</span> Hunting 3 CVs...';
+
+    showCollectLoader(120);
+    const startMs = Date.now();
+    const tick = setInterval(() => updateCollectLoader(startMs, 120), 500);
+
+    try {
+        const resp = await api('/hunt-all?remote_only=true', { method: 'POST' });
+        clearInterval(tick);
+        hideCollectLoader();
+
+        if (resp.ok && resp.profiles) {
+            const summaryParts = Object.entries(resp.profiles).map(([name, s]) => {
+                const shortName = name.split('—').pop().trim();
+                return `<strong>${escapeHtml(shortName)}</strong>: ${s.new} new`;
+            });
+            showActivityModal('⚡ 24/7 Remote Hunt Completed', `<p class="mb-2">Ran continuous scan across all candidate profiles strictly for remote postings:</p><div class="text-xs text-left bg-slate-50 p-3 rounded-lg border border-slate-200">${summaryParts.join('<br>')}</div>`, '🚀');
+        } else {
+            showToast('24/7 Hunt completed!');
+        }
+        await Promise.all([loadJobs(), loadStats(), loadHuntStatus()]);
+    } catch (err) {
+        clearInterval(tick);
+        hideCollectLoader();
+        showToast('Hunt error: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡</span> Run 24/7 Hunt Now';
+    }
+}
+
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal(); closeExportModal(); closeQueriesModal(); }
@@ -723,6 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSheetsStatus();
     loadJSearchStatus();
     loadActiveProfileIndicator();
+    loadHuntStatus();
 
     // Debounced search
     let searchTimeout;

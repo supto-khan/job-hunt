@@ -277,7 +277,8 @@ def send_daily_digest(limit: int = None, dry_run: bool = False) -> dict:
 def generate_outreach_for_top_jobs(limit: int = 15, min_score: int = 40,
                                    bd_friendly: str = "maybe",
                                    india_friendly: str = None,
-                                   seen_after: Optional[str] = None) -> int:
+                                   seen_after: Optional[str] = None,
+                                   profile: Optional[dict] = None) -> int:
     """Create outreach items for the highest-scoring jobs that don't have one yet.
     If `seen_after` is given, only jobs refreshed at/after that timestamp qualify —
     use this to scope generation to a specific collection run.
@@ -291,12 +292,12 @@ def generate_outreach_for_top_jobs(limit: int = 15, min_score: int = 40,
     from core.contact_finder import extract_contacts_from_text, extract_github_contacts
     import hashlib, json, os
 
-    profile = get_active_profile()
+    profile = profile or get_active_profile()
     profile_id = profile.get("_id")
 
     loc_filter = bd_friendly or india_friendly or "maybe"
     top_jobs = get_jobs(min_score=min_score, bd_friendly=loc_filter,
-                         seen_after=seen_after, limit=limit * 5)
+                         seen_after=seen_after, profile_id=profile_id, limit=limit * 5)
     candidates = [j for j in top_jobs if not outreach_exists_for_job(j["id"])][:limit]
 
     # All items in this run share the same timestamp so batch filtering is

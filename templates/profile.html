@@ -12,10 +12,32 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Lexend', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#F0FDF9',
+                            surface: '#FFFFFF',
+                            primary: '#00A878',
+                            cta: '#00C896',
+                            accent: '#5EEAD4',
+                            muted: '#64748B',
+                            dark: '#0F1F17',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <link rel="stylesheet" href="/static/style.css?v=8">
-    <link rel="stylesheet" href="/static/profile.css?v=1">
+    <link rel="stylesheet" href="/static/style.css?v=10">
+    <link rel="stylesheet" href="/static/profile.css?v=2">
 </head>
 <body>
     <div class="header">
@@ -28,6 +50,7 @@
                 <a href="/" class="nav-tab">Jobs</a>
                 <a href="/outreach" class="nav-tab">Outreach</a>
                 <a href="/profile" class="nav-tab active">Profile</a>
+                <a href="/freehire" class="nav-tab">FreeHire</a>
             </nav>
         </div>
         <div class="header-actions">

@@ -1,0 +1,247 @@
+name: "Supto — Frontend Developer"
+description: "Frontend Developer with 5+ years building production-grade web applications, interactive dashboards, and design systems with React, Next.js, Angular, and TypeScript. Strictly remote."
+schema_version: 1
+
+search:
+  default_terms:
+    - "senior frontend developer"
+    - "frontend developer"
+    - "react developer"
+    - "frontend engineer"
+    - "senior react developer"
+    - "typescript frontend developer"
+    - "nextjs developer"
+    - "ui engineer"
+  title_keywords_positive:
+    - "frontend"
+    - "front-end"
+    - "front end"
+    - "react"
+    - "next.js"
+    - "nextjs"
+    - "ui"
+    - "ui engineer"
+    - "javascript"
+    - "typescript"
+    - "web developer"
+    - "software engineer"
+    - "angular"
+  title_keywords_negative:
+    - "backend only"
+    - "back-end only"
+    - "python only"
+    - "django"
+    - "java only"
+    - "c#"
+    - ".net"
+    - "php only"
+    - "ruby"
+    - "rails"
+    - "ios native"
+    - "swift"
+    - "android kotlin"
+    - "devops"
+    - "data scientist"
+    - "machine learning"
+    - "qa"
+    - "test automation"
+    - "intern"
+    - "internship"
+    - "trainee"
+    - "unpaid"
+    - "volunteer"
+  relevant_tech:
+    - "react"
+    - "next.js"
+    - "nextjs"
+    - "angular"
+    - "typescript"
+    - "javascript"
+    - "html5"
+    - "css3"
+    - "tailwind"
+    - "bootstrap"
+    - "redux"
+    - "rxjs"
+    - "rest api"
+    - "graphql"
+    - "vite"
+    - "webpack"
+    - "jest"
+    - "karma"
+    - "jasmine"
+    - "git"
+    - "github"
+  jsearch_default_queries:
+    - query: "Senior Frontend Developer"
+      country: "US"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+    - query: "React Developer remote"
+      country: "GB"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+    - query: "Frontend Engineer React TypeScript remote"
+      country: "BD"
+      remote_jobs_only: true
+      date_posted: "3days"
+      enabled: true
+
+scoring:
+  experience_target: "senior"
+  min_relevance_score: 50
+  min_score_to_store: 25
+  weights:
+    title: 40
+    tech: 35
+    experience: 15
+    signal: 10
+  core_tech:
+    - "react"
+    - "nextjs"
+    - "next.js"
+    - "angular"
+    - "typescript"
+    - "javascript"
+    - "tailwind"
+    - "rest api"
+  backend_signals:
+    - "component architecture"
+    - "design system"
+    - "dashboard"
+    - "reporting"
+    - "ui/ux"
+    - "responsive design"
+    - "state management"
+    - "performance optimization"
+    - "web vitals"
+  experience_bonuses:
+    fresher:
+      fresher: 15
+      junior: 10
+      mid: 0
+      senior: -5
+    junior:
+      fresher: 5
+      junior: 15
+      mid: 5
+      senior: -5
+    mid:
+      fresher: -10
+      junior: 0
+      mid: 15
+      senior: 10
+    senior:
+      fresher: -15
+      junior: -10
+      mid: 5
+      senior: 20
+    any:
+      fresher: 10
+      junior: 10
+      mid: 10
+      senior: 10
+
+location:
+  india_positive:
+    - "remote"
+    - "worldwide"
+    - "anywhere"
+    - "global"
+    - "apac"
+    - "bangladesh"
+    - "india"
+    - "asia"
+    - "emea"
+    - "remote - worldwide"
+    - "work from anywhere"
+  india_negative:
+    - "us only"
+    - "usa only"
+    - "us-only"
+    - "united states only"
+    - "must be located in the us"
+    - "must reside in the us"
+    - "us-based"
+    - "canada only"
+    - "uk only"
+    - "eu only"
+    - "must be authorized to work in the united states"
+    - "no visa sponsorship"
+    - "us citizen"
+  timezone_compatible:
+    - "gmt"
+    - "utc"
+    - "cet"
+    - "eet"
+    - "ast"
+    - "flexible"
+    - "async"
+    - "asynchronous"
+    - "overlap"
+    - "any timezone"
+    - "all timezones"
+  timezone_incompatible:
+    - "pst only"
+    - "est only"
+    - "mst only"
+    - "us timezone required"
+
+outreach:
+  candidate_name: "Supto Mohammad Sabur Islam Khan"
+  candidate_core_tech:
+    - "React"
+    - "Next.js"
+    - "Angular"
+    - "TypeScript"
+    - "JavaScript (ES6+)"
+  candidate_extra_tech:
+    - "Tailwind CSS"
+    - "HTML5/CSS3"
+    - "Bootstrap"
+    - "REST APIs"
+    - "Redux / RxJS"
+    - "Jest / Karma"
+  linkedin_search_titles:
+    - title: "Engineering Manager"
+      label: "Eng Manager"
+      category: "engineering"
+    - title: "Frontend Lead"
+      label: "Frontend Lead"
+      category: "engineering"
+    - title: "Tech Lead"
+      label: "Tech Lead"
+      category: "engineering"
+    - title: "Head of Engineering"
+      label: "Head of Eng"
+      category: "engineering"
+    - title: "CTO"
+      label: "CTO"
+      category: "executive"
+    - title: "Technical Recruiter"
+      label: "Tech Recruiter"
+      category: "hr"
+  bio_short: "Frontend Developer with 5+ years shipping high-performance interfaces across React, Angular, and TypeScript"
+  achievements:
+    - "5+ years building scalable, responsive web applications and enterprise portals with modular component design."
+    - "Architected multi-module dashboards, interactive onboarding flows, and analytics tools cutting report generation time by 70%."
+    - "Delivered responsive web interfaces and mobile hybrid apps with sub-second page loads and seamless REST API integrations."
+    - "Enforced strict component reusability, TDD test suites, and clean UI architectures across distributed international teams."
+  dm_short_template: "{greeting}, I noticed {company} is hiring for {title}. I'm a Frontend Developer with 5+ years of experience shipping scalable, responsive web platforms across React, Angular, and TypeScript. Would love to connect."
+  dm_long_template: |
+    {greeting},
+
+    I noticed {company} is hiring for {title}. Given my 5+ years specializing in modern frontend architecture across React, Next.js, and TypeScript, the role looks like a great match.
+
+    A few key highlights from my work:
+    {achievements}
+
+    I am available for remote positions with flexible timezone overlap. Would you be open to a 10-15 minute introductory chat?
+
+    Best regards,
+    {candidate_name}
+  email_digest_subject_role: "Frontend Developer"
+  email_greeting: "Good morning, Supto 👋"
+  recipient_email: "suptokhan24@gmail.com"

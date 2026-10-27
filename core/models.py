@@ -24,6 +24,7 @@ class Job(BaseModel):
     bd_friendly: str = "unknown"  # yes/no/maybe/unknown
     india_friendly: str = "unknown"  # backward compatibility alias
     location_note: str = ""  # explanation of location check
+    work_mode: str = ""  # remote/hybrid/onsite
 
     @property
     def fingerprint(self) -> str:

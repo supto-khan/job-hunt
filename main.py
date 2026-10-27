@@ -7,6 +7,7 @@ from typing import Optional
 from pydantic import BaseModel
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from core.database import (
     init_db, get_jobs, get_job_by_id, update_job_status, get_stats, get_sources,
@@ -14,9 +15,9 @@ from core.database import (
     update_company_crawl_status, get_company_stats,
     insert_outreach, get_outreach, update_outreach_status, update_outreach_notes,
     outreach_exists_for_job, get_outreach_stats,
-    toggle_mark_for_email, get_marked_jobs,
+    toggle_mark_for_email, get_marked_jobs, insert_job,
 )
-from core.collector import run_collection, run_company_crawl
+from core.collector import run_collection, run_company_crawl, run_multi_profile_hunt
 from core.sheets import export_to_sheet
 from core.emailer import run_daily_pipeline, send_daily_digest, generate_outreach_for_top_jobs
 from core.profile import (
@@ -25,6 +26,7 @@ from core.profile import (
     import_preset, export_profile, list_presets,
     get_active_profile_queries, add_active_profile_query,
     update_active_profile_query, delete_active_profile_query,
+    ensure_core_profiles, get_hunting_profiles,
 )
 from config.settings import (
     HOST, PORT, GOOGLE_SHEETS_CREDS, GOOGLE_SHEET_ID, HUNTER_API_KEY,
@@ -42,6 +44,19 @@ scheduler = AsyncIOScheduler(timezone=DAILY_EMAIL_TIMEZONE)
 @app.on_event("startup")
 async def startup():
     init_db()
+    try:
+        ensure_core_profiles()
+    except Exception as e:
+        print(f"[WARN] Error ensuring core profiles: {e}", flush=True)
+
+    # 24/7 Continuous Remote Job Hunt: runs every 2 hours across all 3 candidate profiles
+    scheduler.add_job(
+        run_multi_profile_hunt,
+        IntervalTrigger(hours=2),
+        id="continuous_24_7_remote_hunt",
+        replace_existing=True,
+        kwargs={"remote_only": True},
+    )
 
     # Schedule daily job search & email digest at 10:00 AM BST (Asia/Dhaka)
     scheduler.add_job(
@@ -52,6 +67,7 @@ async def startup():
         kwargs={"send": bool(SENDER_EMAIL)},
     )
     scheduler.start()
+    print("✅ 24/7 Automated Remote Job Hunter started (Every 2 hours across all 3 CV profiles)", flush=True)
     print(f"✅ Automated Daily Search & Pipeline scheduled for {DAILY_EMAIL_HOUR}:00 AM ({DAILY_EMAIL_TIMEZONE})", flush=True)
 
 
@@ -79,6 +95,7 @@ async def api_get_jobs(
     bd_friendly: Optional[str] = None,
     india_friendly: Optional[str] = None,
     company_domain: Optional[str] = None,
+    profile_id: Optional[int] = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -87,6 +104,7 @@ async def api_get_jobs(
         source=source, status=status, min_score=min_score,
         search=search, location=location, tech=tech,
         bd_friendly=loc_filter, company_domain=company_domain,
+        profile_id=profile_id,
         limit=limit, offset=offset,
     )
     return {"jobs": jobs, "count": len(jobs)}
@@ -126,6 +144,46 @@ async def api_collect(generate_outreach: bool = Query(True)):
         # stale 3-year-old python listings still sitting in the DB.
         stats["outreach_generated"] = generate_outreach_for_top_jobs(seen_after=cutoff)
     return stats
+
+
+# ── 24/7 Automated Multi-Profile Remote Hunt ──────────────────
+
+@app.post("/api/hunt-all")
+async def api_hunt_all(remote_only: bool = Query(True)):
+    """Run an immediate 24/7 multi-profile remote collection cycle across all 3 CV profiles."""
+    summary = await run_multi_profile_hunt(remote_only=remote_only)
+    return {"ok": True, "profiles": summary}
+
+
+@app.get("/api/hunt-status")
+async def api_hunt_status():
+    """Return status, schedule, and recent stats of the 24/7 automated remote job hunt."""
+    from core.database import get_connection
+    import json
+
+    job = scheduler.get_job("continuous_24_7_remote_hunt")
+    next_run = str(job.next_run_time) if job and job.next_run_time else None
+
+    last_run_data = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT `value` FROM app_settings WHERE `key` = '24_7_last_run'")
+            row = cur.fetchone()
+            if row and row["value"]:
+                last_run_data = json.loads(row["value"])
+        conn.close()
+    except Exception:
+        pass
+
+    return {
+        "active": scheduler.running and job is not None,
+        "interval_hours": 2,
+        "target": "Strictly Remote (Worldwide & Timezone Compatible)",
+        "next_run_time": next_run,
+        "last_run": last_run_data,
+        "profiles": list_profiles(),
+    }
 
 
 # ── Companies API ──────────────────────────────────────────────
@@ -693,6 +751,241 @@ async def api_rescore_all(
         conn.close()
 
     return {"ok": True, "scanned": len(rows), "updated": updated, "deleted": deleted}
+
+
+# ── FreeHire Direct Search & Import API ─────────────────────────────
+
+@app.get("/freehire", response_class=HTMLResponse)
+async def freehire_page(request: Request):
+    return templates.TemplateResponse(request, "freehire.html")
+
+
+@app.get("/api/freehire/search")
+async def api_freehire_search(
+    q: Optional[str] = None,
+    work_mode: Optional[str] = "remote",
+    seniority: Optional[str] = None,
+    skills: Optional[str] = None,
+    skills_mode: Optional[str] = "or",
+    category: Optional[str] = None,
+    countries: Optional[str] = None,
+    regions: Optional[str] = None,
+    is_tech: Optional[str] = "tech",
+    posted_within_days: Optional[int] = 14,
+    limit: int = Query(25, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    """Direct live query to FreeHire API with filters."""
+    import httpx
+    import hashlib
+    from config.settings import FREEHIRE_API_KEY
+
+    params = {
+        "limit": limit,
+        "offset": offset,
+    }
+    if q and q.strip():
+        params["q"] = q.strip()
+    if work_mode and work_mode != "all":
+        params["work_mode"] = work_mode
+    if seniority and seniority != "all":
+        params["seniority"] = seniority
+    if is_tech and is_tech != "all":
+        params["is_tech"] = is_tech
+    if posted_within_days and posted_within_days > 0:
+        params["posted_within_days"] = posted_within_days
+    if regions and regions != "all":
+        params["regions"] = regions
+    if countries and countries != "all":
+        params["countries"] = countries
+    if category and category != "all":
+        params["category"] = category
+    if skills and skills.strip():
+        skill_list = [s.strip() for s in skills.split(",") if s.strip()]
+        if skill_list:
+            params["skills"] = skill_list
+            if skills_mode in ("and", "or"):
+                params["skills_mode"] = skills_mode
+
+    headers = {
+        "User-Agent": "job-hunter/1.0 (+https://github.com/supto-khan/job-hunt)",
+        "Accept": "application/json",
+    }
+    if FREEHIRE_API_KEY:
+        headers["Authorization"] = f"Bearer {FREEHIRE_API_KEY}"
+
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            resp = await client.get("https://freehire.me/api/v1/jobs/search", headers=headers, params=params)
+            if resp.status_code != 200:
+                return {
+                    "error": f"FreeHire API returned status {resp.status_code}",
+                    "jobs": [],
+                    "total": 0,
+                    "limit": limit,
+                    "offset": offset,
+                }
+            payload = resp.json()
+            raw_jobs = payload.get("data", [])
+            meta = payload.get("meta", {})
+            total = meta.get("total", len(raw_jobs))
+    except Exception as e:
+        return {
+            "error": f"Failed to contact FreeHire API: {str(e)}",
+            "jobs": [],
+            "total": 0,
+            "limit": limit,
+            "offset": offset,
+        }
+
+    # Format jobs & check if already saved in local DB
+    formatted_jobs = []
+    for item in raw_jobs:
+        title = (item.get("title") or "").strip()
+        company = (item.get("company") or "").strip()
+        loc = (item.get("location") or "").strip()
+        work_mode_val = item.get("work_mode") or ""
+        if work_mode_val == "remote":
+            if loc and "remote" not in loc.lower():
+                display_location = f"Remote ({loc})"
+            else:
+                display_location = loc or "Remote"
+        else:
+            display_location = loc or "Remote"
+
+        raw_key = f"{company.lower().strip()}|{title.lower().strip()}|{display_location.lower().strip()}"
+        job_id = hashlib.md5(raw_key.encode()).hexdigest()
+
+        # Check local DB
+        is_saved = False
+        saved_status = None
+        saved_score = None
+        try:
+            local_job = get_job_by_id(job_id)
+            if local_job:
+                is_saved = True
+                saved_status = local_job.get("status")
+                saved_score = local_job.get("relevance_score")
+        except Exception:
+            pass
+
+        enrichment = item.get("enrichment") or {}
+        s_min = enrichment.get("salary_min")
+        s_max = enrichment.get("salary_max")
+        curr = enrichment.get("salary_currency", "")
+        period = enrichment.get("salary_period", "")
+        if s_min and s_max:
+            salary_str = f"{curr} {s_min:,} - {s_max:,} / {period}".strip()
+        elif s_min:
+            salary_str = f"{curr} {s_min:,}+ / {period}".strip()
+        else:
+            salary_str = ""
+
+        formatted_jobs.append({
+            "id": job_id,
+            "public_slug": item.get("public_slug", ""),
+            "title": title,
+            "company": company,
+            "company_slug": item.get("company_slug", ""),
+            "location": display_location,
+            "raw_location": loc,
+            "work_mode": work_mode_val,
+            "source": item.get("source", "freehire"),
+            "url": item.get("url", ""),
+            "posted_at": item.get("posted_at", ""),
+            "skills": item.get("skills", []),
+            "description": item.get("description", ""),
+            "summary": enrichment.get("summary", ""),
+            "salary": salary_str,
+            "seniority": enrichment.get("seniority") or "",
+            "employment_type": enrichment.get("employment_type") or "",
+            "is_saved": is_saved,
+            "saved_status": saved_status,
+            "saved_score": saved_score,
+        })
+
+    return {
+        "jobs": formatted_jobs,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+class FreeHireImportRequest(BaseModel):
+    title: str
+    company: str
+    location: str = "Remote"
+    description: str = ""
+    url: str = ""
+    source: str = "freehire"
+    posted_at: Optional[str] = ""
+    skills: list = []
+    salary: Optional[str] = ""
+    seniority: Optional[str] = ""
+    work_mode: Optional[str] = ""
+
+
+@app.post("/api/freehire/import")
+async def api_freehire_import(body: FreeHireImportRequest):
+    """Import a FreeHire job into local DB with automatic profile scoring."""
+    from datetime import datetime
+    from core.models import Job
+    from core.database import insert_job
+    from core.scorer import score_job
+    from core.profile import get_active_profile
+
+    profile = get_active_profile()
+    profile_id = profile.get("_id")
+
+    loc = body.location.strip()
+    if body.work_mode == "remote":
+        if loc and "remote" not in loc.lower():
+            loc = f"Remote ({loc})"
+        else:
+            loc = loc or "Remote"
+
+    tech_stack = ", ".join(body.skills) if body.skills else ""
+
+    job = Job(
+        title=body.title.strip(),
+        company=body.company.strip(),
+        location=loc,
+        description=body.description,
+        url=body.url,
+        source="freehire",
+        posted_date=body.posted_at or "",
+        tech_stack=tech_stack,
+        salary=body.salary or "",
+        job_type="remote" if body.work_mode == "remote" else "full-time",
+    )
+
+    result = score_job(job.title, job.description, job.location, profile=profile)
+    job.relevance_score = result["score"]
+    job.experience_level = result.get("experience_level", "")
+    job.bd_friendly = result.get("bd_friendly", "unknown")
+    job.india_friendly = result.get("india_friendly", "unknown")
+    job.location_note = result.get("location_note", "")
+
+    existing_tech = set(t.strip() for t in job.tech_stack.split(",") if t.strip())
+    existing_tech.update(result.get("tech_stack", []))
+    job.tech_stack = ", ".join(sorted(existing_tech))
+
+    if not job.company_domain:
+        job.company_domain = job.extract_domain()
+
+    job_dict = job.model_dump()
+    job_dict["id"] = job.fingerprint
+    job_dict["discovered_at"] = datetime.utcnow().isoformat()
+    job_dict["scored_profile_id"] = profile_id
+
+    status = insert_job(job_dict)
+    return {
+        "ok": True,
+        "status": status,
+        "score": job.relevance_score,
+        "id": job.fingerprint,
+    }
 
 
 # ── UI Routes ──────────────────────────────────────────────────
