@@ -210,6 +210,17 @@ def score_job(title: str, description: str, location: str = "",
         score += min(len(secondary_tech) * 3, secondary_budget)
         reasons.append(f"Related tech: {', '.join(secondary_tech[:8])}")
 
+    # Must-have / Required primary tech check (e.g. ['angular'] for an Angular specialist)
+    must_have = scoring.get("must_have_tech") or []
+    if must_have:
+        has_must_have = any(
+            re.search(r'\b' + re.escape(mh.strip().lower()) + r'\b', full_text)
+            for mh in must_have if mh.strip()
+        )
+        if not has_must_have:
+            score -= 40
+            red_flags.append(f"Missing required tech: {', '.join(must_have)}")
+
     # Experience lookup
     exp_level = estimate_experience_level(full_text)
     row = exp_bonuses.get(exp_target) or {}
