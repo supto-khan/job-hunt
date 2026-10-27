@@ -143,13 +143,16 @@ def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
         job_dict["discovered_at"] = datetime.utcnow().isoformat()
         job_dict["scored_profile_id"] = profile_id
 
-        result_status = insert_job(job_dict)
-        if result_status == "new":
-            stats["new"] += 1
-            if result["score"] >= 80:
-                stats.setdefault("new_high_matches", []).append(job_dict)
-        else:
-            stats["updated"] = stats.get("updated", 0) + 1
+        try:
+            result_status = insert_job(job_dict)
+            if result_status == "new":
+                stats["new"] += 1
+                if result["score"] >= 80:
+                    stats.setdefault("new_high_matches", []).append(job_dict)
+            else:
+                stats["updated"] = stats.get("updated", 0) + 1
+        except Exception as e:
+            log(f"  [WARN] Failed storing job '{job.title[:60]}': {e}")
 
 
 async def run_company_crawl(company_ids: list[str] = None) -> dict:

@@ -99,6 +99,18 @@ def init_db():
         except Exception:
             pass
 
+        # Migration: Ensure text/varchar columns are wide enough for verbose ATS feeds
+        for alter_sql in (
+            "ALTER TABLE jobs MODIFY COLUMN title TEXT;",
+            "ALTER TABLE jobs MODIFY COLUMN company VARCHAR(500);",
+            "ALTER TABLE jobs MODIFY COLUMN location VARCHAR(500);",
+            "ALTER TABLE jobs MODIFY COLUMN salary VARCHAR(500);",
+        ):
+            try:
+                cur.execute(alter_sql)
+            except Exception:
+                pass
+
         # Companies table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS companies (
@@ -227,6 +239,18 @@ def insert_job(job_dict: dict) -> str:
     conn = get_connection()
     try:
         with conn.cursor() as cur:
+            title = str(job_dict.get("title") or "").strip()[:500]
+            company = str(job_dict.get("company") or "").strip()[:400]
+            location = str(job_dict.get("location") or "Remote").strip()[:400]
+            salary = str(job_dict.get("salary") or "").strip()[:400]
+            source = str(job_dict.get("source") or "").strip()[:200]
+            job_type = str(job_dict.get("job_type") or "").strip()[:100]
+            company_domain = str(job_dict.get("company_domain") or "").strip()[:255]
+            experience_level = str(job_dict.get("experience_level") or "").strip()[:100]
+            bd_friendly = str(job_dict.get("bd_friendly") or "unknown").strip()[:50]
+            posted_date = str(job_dict.get("posted_date") or "").strip()[:100]
+            discovered_at = str(job_dict.get("discovered_at") or datetime.utcnow().isoformat())[:100]
+
             cur.execute(_prep_sql("SELECT id FROM jobs WHERE id = ?"), (job_dict["id"],))
             row = cur.fetchone()
 
@@ -241,15 +265,15 @@ def insert_job(job_dict: dict) -> str:
                         scored_profile_id = ?, last_seen = ?
                     WHERE id = ?
                 """), (
-                    job_dict.get("title", ""), job_dict.get("company", ""),
-                    job_dict.get("location", ""), job_dict.get("description", ""),
-                    job_dict.get("url", ""), job_dict.get("source", ""),
-                    job_dict.get("posted_date", ""), job_dict.get("tech_stack", ""),
-                    job_dict.get("experience_level", ""), job_dict.get("relevance_score", 0),
-                    job_dict.get("company_domain", ""), job_dict.get("salary", ""),
-                    job_dict.get("job_type", ""), job_dict.get("bd_friendly", "unknown"),
+                    title, company,
+                    location, job_dict.get("description", ""),
+                    job_dict.get("url", ""), source,
+                    posted_date, job_dict.get("tech_stack", ""),
+                    experience_level, job_dict.get("relevance_score", 0),
+                    company_domain, salary,
+                    job_type, bd_friendly,
                     job_dict.get("location_note", ""), job_dict.get("scored_profile_id"),
-                    job_dict.get("discovered_at", ""), job_dict["id"],
+                    discovered_at, job_dict["id"],
                 ))
                 return "updated"
             else:
@@ -263,16 +287,16 @@ def insert_job(job_dict: dict) -> str:
                         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     )
                 """), (
-                    job_dict["id"], job_dict.get("title", ""), job_dict.get("company", ""),
-                    job_dict.get("location", "Remote"), job_dict.get("description", ""),
-                    job_dict.get("url", ""), job_dict.get("source", ""),
-                    job_dict.get("posted_date", ""), job_dict.get("discovered_at", ""),
-                    job_dict.get("tech_stack", ""), job_dict.get("experience_level", ""),
+                    job_dict["id"], title, company,
+                    location, job_dict.get("description", ""),
+                    job_dict.get("url", ""), source,
+                    posted_date, discovered_at,
+                    job_dict.get("tech_stack", ""), experience_level,
                     job_dict.get("relevance_score", 0), job_dict.get("status", "new"),
-                    job_dict.get("company_domain", ""), job_dict.get("salary", ""),
-                    job_dict.get("job_type", ""), job_dict.get("bd_friendly", "unknown"),
+                    company_domain, salary,
+                    job_type, bd_friendly,
                     job_dict.get("location_note", ""), job_dict.get("scored_profile_id"),
-                    job_dict.get("discovered_at", ""),
+                    discovered_at,
                 ))
                 return "new"
     finally:
