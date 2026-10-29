@@ -322,6 +322,7 @@ async function importJob(jobId) {
 }
 
 async function markJobApplied(jobId) {
+    closeFhModal();
     const job = fhState.jobs.find(j => j.id === jobId);
     if (!job) return;
 

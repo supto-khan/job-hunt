@@ -14,7 +14,7 @@ async function api(path, opts = {}) {
     return resp.json();
 }
 
-async function loadJobs() {
+async function loadJobs(showSpinner = true) {
     const f = state.filters;
     const params = new URLSearchParams();
     if (f.source) params.set('source', f.source);
@@ -28,8 +28,10 @@ async function loadJobs() {
     params.set('limit', state.limit);
     params.set('offset', state.offset);
 
-    document.getElementById('job-list').innerHTML = `
-        <div class="loading"><div class="spinner"></div> Loading jobs...</div>`;
+    if (showSpinner) {
+        document.getElementById('job-list').innerHTML = `
+            <div class="loading"><div class="spinner"></div> Loading jobs...</div>`;
+    }
 
     const data = await api(`/jobs?${params}`);
     state.jobs = data.jobs;
@@ -109,9 +111,23 @@ function formatSeconds(total) {
 }
 
 async function updateStatus(jobId, status) {
-    await api(`/jobs/${jobId}/status?status=${status}`, { method: 'PATCH' });
-    showToast(`Status updated to ${status}`);
-    await loadJobs();
+    closeModal();
+    const job = state.jobs.find(j => j.id === jobId);
+    if (job) {
+        job.status = status;
+        if (state.filters.status && state.filters.status !== status) {
+            state.jobs = state.jobs.filter(j => j.id !== jobId);
+        }
+        renderJobs();
+    }
+    try {
+        await api(`/jobs/${jobId}/status?status=${status}`, { method: 'PATCH' });
+        showToast(`Status updated to ${status}`);
+        await Promise.all([loadJobs(false), loadStats()]);
+    } catch (e) {
+        showToast(`Failed to update status: ${e.message}`);
+        await loadJobs(false);
+    }
 }
 
 // ── Bangladesh badge helper ──
@@ -398,7 +414,10 @@ function openModal(jobId) {
         <div class="modal-desc">${job.description || '<em>No description available</em>'}</div>
         <div class="modal-actions">
             <button class="btn btn-outline" onclick="updateStatus('${job.id}', 'reviewed')">Mark Reviewed</button>
-            <button class="btn btn-green" onclick="updateStatus('${job.id}', 'applied')">Mark Applied</button>
+            ${job.status === 'applied'
+                ? `<button class="btn btn-green" disabled style="opacity:0.75;cursor:default;">✓ Applied</button>`
+                : `<button class="btn btn-green" onclick="updateStatus('${job.id}', 'applied')">Mark Applied</button>`
+            }
             <button class="btn btn-yellow" onclick="updateStatus('${job.id}', 'stale')">Mark Stale</button>
             ${job.url ? `<a href="${escapeHtml(job.url)}" target="_blank" class="btn btn-primary">Apply</a>` : ''}
             <button class="btn btn-outline" onclick="closeModal()">Close</button>
