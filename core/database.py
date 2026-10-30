@@ -230,12 +230,66 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
 
+        # Purge blacklisted aggregator data (whatjobs.com)
+        pattern = "%whatjobs%"
+        cur.execute("""
+            DELETE FROM outreach WHERE job_id IN (
+                SELECT id FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+            ) OR company_domain LIKE %s OR company LIKE %s
+        """, (pattern, pattern, pattern, pattern, pattern, pattern))
+        cur.execute("""
+            DELETE FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+        """, (pattern, pattern, pattern, pattern))
+
     conn.close()
 
 
 # ── Jobs CRUD ─────────────────────────────────────────────────────────
 
+def is_blacklisted_job(job_dict: dict) -> bool:
+    """Return True if job is from an excluded/spam aggregator like whatjobs.com."""
+    url = str(job_dict.get("url") or "").lower()
+    company_domain = str(job_dict.get("company_domain") or "").lower()
+    company = str(job_dict.get("company") or "").lower()
+    source = str(job_dict.get("source") or "").lower()
+
+    if "whatjobs.com" in url or "whatjobs" in url:
+        return True
+    if "whatjobs.com" in company_domain or "whatjobs" in company_domain:
+        return True
+    if "whatjobs" in company or "whatjobs" in source:
+        return True
+    return False
+
+
+def purge_whatjobs_data() -> dict:
+    """Remove all jobs and associated outreach records originating from whatjobs.com."""
+    conn = get_connection()
+    deleted_jobs = 0
+    deleted_outreach = 0
+    try:
+        with conn.cursor() as cur:
+            pattern = "%whatjobs%"
+            cur.execute("""
+                DELETE FROM outreach WHERE job_id IN (
+                    SELECT id FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+                ) OR company_domain LIKE %s OR company LIKE %s
+            """, (pattern, pattern, pattern, pattern, pattern, pattern))
+            deleted_outreach = cur.rowcount
+
+            cur.execute("""
+                DELETE FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+            """, (pattern, pattern, pattern, pattern))
+            deleted_jobs = cur.rowcount
+    finally:
+        conn.close()
+    return {"deleted_jobs": deleted_jobs, "deleted_outreach": deleted_outreach}
+
+
 def insert_job(job_dict: dict) -> str:
+    if is_blacklisted_job(job_dict):
+        return "filtered"
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -358,8 +412,8 @@ def get_jobs(
 ) -> List[Dict[str, Any]]:
     conn = get_connection()
     try:
-        query = "SELECT * FROM jobs WHERE relevance_score >= %s"
-        params: list = [min_score]
+        query = "SELECT * FROM jobs WHERE relevance_score >= %s AND url NOT LIKE %s AND company_domain NOT LIKE %s"
+        params: list = [min_score, "%whatjobs%", "%whatjobs%"]
 
         if profile_id:
             query += " AND scored_profile_id = %s"

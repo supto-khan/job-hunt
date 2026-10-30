@@ -130,6 +130,12 @@ def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
     min_store = int((profile.get("scoring") or {}).get("min_score_to_store", 25))
 
     for job in jobs:
+        url_str = (job.url or "").lower()
+        comp_str = (job.company or "").lower()
+        if "whatjobs.com" in url_str or "whatjobs" in url_str or "whatjobs" in comp_str:
+            stats["filtered_out"] += 1
+            continue
+
         result = score_job(job.title, job.description, job.location, profile=profile)
 
         # Filter: drop irrelevant jobs before storing (saves DB space)
@@ -351,10 +357,15 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
     for r in results:
         all_jobs.extend(r)
 
-    # Filter strictly for remote if remote_only is True
-    if remote_only:
-        filtered_jobs = []
-        for j in all_jobs:
+    # Filter strictly for remote if remote_only is True, and always exclude whatjobs spam
+    filtered_jobs = []
+    for j in all_jobs:
+        url_str = (j.url or "").lower()
+        comp_str = (j.company or "").lower()
+        if "whatjobs.com" in url_str or "whatjobs" in url_str or "whatjobs" in comp_str:
+            continue
+
+        if remote_only:
             loc_str = (j.location or "").lower()
             title_str = (j.title or "").lower()
             desc_str = (j.description or "").lower()
@@ -364,7 +375,9 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
                 filtered_jobs.append(j)
             elif not wm and not loc_str:  # Unspecified location on remote job boards
                 filtered_jobs.append(j)
-        all_jobs = filtered_jobs
+        else:
+            filtered_jobs.append(j)
+    all_jobs = filtered_jobs
 
     log(f"  Total remote postings fetched across all sources: {len(all_jobs)}")
 

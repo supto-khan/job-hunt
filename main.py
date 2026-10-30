@@ -874,9 +874,14 @@ async def api_freehire_search(
         loc = (item.get("location") or "").strip()
         url = (item.get("url") or "").strip()
         clean_url = url.strip().lower()
-        base_url = clean_url.split("?")[0].rstrip("/")
         comp_norm = company.strip().lower()
         tit_norm = title.strip().lower()
+
+        # Exclude whatjobs.com aggregator spam from search results
+        if "whatjobs.com" in clean_url or "whatjobs" in clean_url or "whatjobs" in comp_norm:
+            continue
+
+        base_url = clean_url.split("?")[0].rstrip("/")
 
         work_mode_val = item.get("work_mode") or ""
         if work_mode_val == "remote":
@@ -977,9 +982,22 @@ class FreeHireImportRequest(BaseModel):
     status: Optional[str] = "new"
 
 
+@app.post("/api/jobs/purge-whatjobs")
+async def api_purge_whatjobs():
+    """Purge all existing whatjobs.com records from database."""
+    from core.database import purge_whatjobs_data
+    result = purge_whatjobs_data()
+    return {"ok": True, **result}
+
+
 @app.post("/api/freehire/import")
 async def api_freehire_import(body: FreeHireImportRequest):
     """Import a FreeHire job into local DB with automatic profile scoring."""
+    url_lower = (body.url or "").lower()
+    comp_lower = (body.company or "").lower()
+    if "whatjobs.com" in url_lower or "whatjobs" in url_lower or "whatjobs" in comp_lower:
+        return {"ok": False, "error": "Postings from whatjobs.com are blocked and cannot be imported."}
+
     from datetime import datetime
     from core.models import Job
     from core.database import insert_job, update_job_status

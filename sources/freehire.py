@@ -78,11 +78,18 @@ class FreeHireSource(BaseSource):
                         if not url or url in seen_urls:
                             continue
                         clean_url = url.strip().lower()
+                        # Exclude spam aggregator whatjobs.com
+                        if "whatjobs.com" in clean_url or "whatjobs" in clean_url:
+                            continue
+
+                        comp = (item.get("company") or "").strip().lower()
+                        if "whatjobs" in comp:
+                            continue
+
                         base_u = clean_url.split("?")[0].rstrip("/")
                         if clean_url in applied_sigs["urls"] or (base_u and base_u in applied_sigs["urls"]):
                             continue
 
-                        comp = (item.get("company") or "").strip().lower()
                         tit = (item.get("title") or "").strip().lower()
                         if (comp, tit) in applied_sigs["pairs"]:
                             continue
@@ -117,7 +124,12 @@ class FreeHireSource(BaseSource):
     def _map_job(self, item: dict) -> Optional[Job]:
         title = (item.get("title") or "").strip()
         company = (item.get("company") or "").strip()
+        url = (item.get("url") or "").strip()
         if not title or not company:
+            return None
+
+        # Exclude whatjobs.com
+        if "whatjobs.com" in url.lower() or "whatjobs" in url.lower() or "whatjobs" in company.lower():
             return None
 
         # Location & work mode normalization

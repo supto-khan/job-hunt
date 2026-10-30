@@ -142,7 +142,11 @@ async function executeSearch(offset = 0) {
             return;
         }
 
-        fhState.jobs = data.jobs || [];
+        fhState.jobs = (data.jobs || []).filter(j => {
+            const u = (j.url || '').toLowerCase();
+            const c = (j.company || '').toLowerCase();
+            return !u.includes('whatjobs.com') && !u.includes('whatjobs') && !c.includes('whatjobs');
+        });
         fhState.total = data.total || 0;
         fhState.hiddenApplied = data.hidden_applied || 0;
         renderJobs();
