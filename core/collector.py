@@ -34,6 +34,17 @@ from config.settings import RAPIDAPI_KEY
 STALE_JOB_DAYS = 14
 
 
+def free_memory():
+    """Force Python garbage collection and trim libc heap on Linux to prevent OOM."""
+    import gc
+    gc.collect()
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:
+        pass
+
+
 def log(msg):
     print(msg, flush=True)
 
@@ -280,6 +291,7 @@ async def run_collection(include_companies: bool = True) -> dict:
     log(f"  Deleted (stale): {total['deleted_stale']}")
     log("Collection complete!")
     log("=" * 50)
+    free_memory()
     return total
 
 
@@ -421,6 +433,14 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
         conn.close()
     except Exception as e:
         log(f"  [WARN] Could not update 24_7_last_run setting: {e}")
+
+    # Free memory from large collections of in-memory job objects
+    try:
+        del all_jobs
+        del high_matches_total
+    except Exception:
+        pass
+    free_memory()
 
     log(f"⚡ [24/7 Remote Job Hunt] Complete! Summary: {results_by_profile}")
     log("=" * 60)
