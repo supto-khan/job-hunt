@@ -52,7 +52,7 @@ def log(msg):
 def _build_job_board_sources() -> list:
     """Build the list of sources fresh each run so JSearch uses current queries."""
     sources = [
-        FreeHireSource(),
+        FreeHireSource(limit_per_query=100, posted_within_days=30, pages_per_query=2),
         RemotiveSource(),
         RemoteOKSource(),
         ArbeitnowSource(),
@@ -136,7 +136,10 @@ def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
             stats["filtered_out"] += 1
             continue
 
-        result = score_job(job.title, job.description, job.location, profile=profile)
+        eval_desc = job.description or ""
+        if job.tech_stack:
+            eval_desc = f"{eval_desc}\n\nTech Stack Skills: {job.tech_stack}"
+        result = score_job(job.title, eval_desc, job.location, profile=profile)
 
         # Filter: drop irrelevant jobs before storing (saves DB space)
         if result["score"] < min_store:
@@ -320,9 +323,12 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
 
     # 1. Aggregate unique search terms across all profiles for FreeHire
     all_terms: list[str] = []
+    # Broad high-signal keywords that capture the primary technologies across all CVs
+    core_broad_terms = ["angular", "frontend", "full stack", "react", "typescript", "laravel"]
+    all_terms.extend(core_broad_terms)
     for p in profiles:
         terms = (p.get("search") or {}).get("default_terms") or []
-        all_terms.extend(terms[:4])
+        all_terms.extend(terms[:3])
 
     seen_terms = set()
     deduped_terms: list[str] = []
@@ -332,9 +338,15 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
             seen_terms.add(clean)
             deduped_terms.append(t)
 
-    # 2. Build multi-source list with FreeHire querying all profile terms
+    # 2. Build multi-source list with FreeHire querying all profile terms (max 100/page, 2 pages, direct ATS only)
     sources = [
-        FreeHireSource(queries=deduped_terms, work_mode="remote" if remote_only else None, limit_per_query=50),
+        FreeHireSource(
+            queries=deduped_terms,
+            work_mode="remote" if remote_only else None,
+            limit_per_query=100,
+            posted_within_days=30,
+            pages_per_query=2,
+        ),
         RemotiveSource(),
         RemoteOKSource(),
         ArbeitnowSource(),

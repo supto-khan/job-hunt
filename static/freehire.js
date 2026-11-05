@@ -6,7 +6,7 @@ const fhState = {
     jobs: [],
     total: 0,
     offset: 0,
-    limit: 25,
+    limit: 50,
     loading: false,
     activeProfile: null,
 };
@@ -16,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-search on page load with default remote tech jobs
     executeSearch(0);
 });
+
+function setQuickSearch(term) {
+    document.getElementById('fh-query').value = term;
+    document.getElementById('fh-work-mode').value = 'remote';
+    document.getElementById('fh-posted').value = '30';
+    executeSearch(0);
+}
 
 async function loadActiveProfile() {
     try {
@@ -54,7 +61,7 @@ function loadProfileKeywords() {
     }
 
     document.getElementById('fh-work-mode').value = 'remote';
-    document.getElementById('fh-posted').value = '14';
+    document.getElementById('fh-posted').value = '30';
     executeSearch(0);
 }
 
@@ -64,7 +71,7 @@ function resetFhFilters() {
     document.getElementById('fh-seniority').value = 'all';
     document.getElementById('fh-region').value = 'all';
     document.getElementById('fh-category').value = 'all';
-    document.getElementById('fh-posted').value = '14';
+    document.getElementById('fh-posted').value = '30';
     document.getElementById('fh-skills').value = '';
     document.getElementById('fh-skills-mode').value = 'or';
     executeSearch(0);
@@ -190,6 +197,16 @@ function renderJobs() {
         const modeClass = job.work_mode === 'remote' ? 'mode-remote' : (job.work_mode === 'hybrid' ? 'mode-hybrid' : 'mode-onsite');
         const modeLabel = job.work_mode ? (job.work_mode.charAt(0).toUpperCase() + job.work_mode.slice(1)) : 'Unspecified';
 
+        const scoreVal = job.live_score !== undefined ? job.live_score : (job.saved_score || 0);
+        let scoreBadge = '';
+        if (scoreVal >= 80) {
+            scoreBadge = `<span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="${(job.score_reasons || []).join('; ')}">⚡ ${scoreVal}% Match</span>`;
+        } else if (scoreVal >= 50) {
+            scoreBadge = `<span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-teal-50 text-teal-800 border border-teal-200" title="${(job.score_reasons || []).join('; ')}">${scoreVal}% Match</span>`;
+        } else if (scoreVal > 0) {
+            scoreBadge = `<span class="text-[11px] px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 border border-slate-200" title="${(job.score_reasons || []).join('; ')}">${scoreVal}% Match</span>`;
+        }
+
         const skillsHtml = (job.skills || []).slice(0, 7).map(s => `
             <span class="tag skill-chip" title="Filter by ${escapeHtml(s)}" onclick="event.stopPropagation(); addSkillFilter('${escapeHtml(s)}')">
                 ${escapeHtml(s)}
@@ -230,6 +247,7 @@ function renderJobs() {
                         <span class="font-semibold text-xs text-brand-dark">${escapeHtml(job.company)}</span>
                         <span class="ats-pill">${escapeHtml(job.source || 'ATS')}</span>
                         <span class="text-[11px] px-2 py-0.5 rounded-full font-medium ${modeClass}">${modeLabel}</span>
+                        ${scoreBadge}
                         ${job.seniority ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 uppercase font-medium">${escapeHtml(job.seniority)}</span>` : ''}
                         ${job.salary ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold">${escapeHtml(job.salary)}</span>` : ''}
                     </div>
@@ -455,8 +473,19 @@ function openFhModal(jobId) {
             <button onclick="closeFhModal()" class="text-brand-muted hover:text-brand-dark text-xl px-2">&times;</button>
         </div>
 
-        ${job.summary ? `
+        ${job.live_score ? `
             <div class="mb-4 bg-emerald-50/70 border border-emerald-200 rounded-lg p-3 text-xs text-brand-dark">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-brand-primary text-sm">⚡ CV Match: ${job.live_score}%</span>
+                    <span class="text-[11px] text-brand-muted">${fhState.activeProfile ? escapeHtml(fhState.activeProfile.name) : 'Active Profile'}</span>
+                </div>
+                ${job.score_reasons && job.score_reasons.length ? `<div class="text-emerald-800">✓ ${escapeHtml(job.score_reasons.join(' · '))}</div>` : ''}
+                ${job.score_flags && job.score_flags.length ? `<div class="text-amber-800 mt-1 font-medium">⚠️ ${escapeHtml(job.score_flags.join(' · '))}</div>` : ''}
+            </div>
+        ` : ''}
+
+        ${job.summary ? `
+            <div class="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-brand-dark">
                 <div class="font-semibold text-brand-primary mb-1">Role Synopsis:</div>
                 ${escapeHtml(job.summary)}
             </div>

@@ -160,13 +160,24 @@
         </div>
     </div>
 
+    <!-- Quick Search Presets for Supto's Profiles -->
+    <div class="px-4 sm:px-8 pt-2 pb-1 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-brand-dark">Quick Presets:</span>
+        <button type="button" class="filter-chip hover:border-brand-primary" onclick="setQuickSearch('angular')">🔥 Angular</button>
+        <button type="button" class="filter-chip hover:border-brand-primary" onclick="setQuickSearch('frontend')">💻 Frontend</button>
+        <button type="button" class="filter-chip hover:border-brand-primary" onclick="setQuickSearch('full stack')">⚡ Full Stack</button>
+        <button type="button" class="filter-chip hover:border-brand-primary" onclick="setQuickSearch('react')">⚛️ React / Next.js</button>
+        <button type="button" class="filter-chip hover:border-brand-primary" onclick="setQuickSearch('typescript')">📘 TypeScript</button>
+        <button type="button" class="filter-chip hover:border-brand-primary" onclick="setQuickSearch('laravel')">🐘 Laravel / Node</button>
+    </div>
+
     <!-- FreeHire Comprehensive Filter Controls -->
     <div class="filters px-4 sm:px-8 py-3 flex-wrap">
         <!-- Search Keyword -->
         <div class="filter-group" style="flex: 2; min-width: 220px;">
             <label>Keyword / Title</label>
             <div class="relative">
-                <input type="text" id="fh-query" placeholder="e.g. backend developer python, fastapi..." onkeydown="if(event.key==='Enter') executeSearch(0)">
+                <input type="text" id="fh-query" placeholder="e.g. Angular, Frontend, Full Stack, React, TypeScript..." onkeydown="if(event.key==='Enter') executeSearch(0)">
             </div>
         </div>
 
@@ -230,8 +241,8 @@
                 <option value="1">Last 24 Hours</option>
                 <option value="3">Last 3 Days</option>
                 <option value="7">Last 7 Days</option>
-                <option value="14" selected>Last 14 Days</option>
-                <option value="30">Last 30 Days</option>
+                <option value="14">Last 14 Days</option>
+                <option value="30" selected>Last 30 Days</option>
                 <option value="0">Anytime</option>
             </select>
         </div>
@@ -278,8 +289,8 @@
             <label class="flex items-center gap-1.5">
                 <span>Per page:</span>
                 <select id="fh-limit" onchange="executeSearch(0)" class="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs text-brand-dark">
-                    <option value="25" selected>25</option>
-                    <option value="50">50</option>
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
                     <option value="100">100</option>
                 </select>
             </label>
@@ -311,6 +322,6 @@
         <div class="modal" id="fh-modal-content" style="width: 760px; max-width: 90vw; max-height: 85vh; overflow-y: auto;"></div>
     </div>
 
-    <script src="/static/freehire.js?v=2"></script>
+    <script src="/static/freehire.js?v=3"></script>
 </body>
 </html>

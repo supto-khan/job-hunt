@@ -787,9 +787,9 @@ async def api_freehire_search(
     countries: Optional[str] = None,
     regions: Optional[str] = None,
     is_tech: Optional[str] = "tech",
-    posted_within_days: Optional[int] = 14,
+    posted_within_days: Optional[int] = 30,
     include_applied: bool = Query(False),
-    limit: int = Query(25, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
     """Direct live query to FreeHire API with filters, excluding already applied jobs."""
@@ -797,10 +797,13 @@ async def api_freehire_search(
     import hashlib
     from config.settings import FREEHIRE_API_KEY
     from core.database import get_applied_job_signatures
+    from core.profile import get_active_profile
+    from core.scorer import score_job
 
     params = {
         "limit": limit,
         "offset": offset,
+        "source_type_exclude": "aggregator",
     }
     if q and q.strip():
         params["q"] = q.strip()
@@ -834,7 +837,7 @@ async def api_freehire_search(
 
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.get("https://freehire.me/api/v1/jobs/search", headers=headers, params=params)
+            resp = await client.get("https://freehire.me/api/v1/agent/jobs/search", headers=headers, params=params)
             if resp.status_code != 200:
                 return {
                     "error": f"FreeHire API returned status {resp.status_code}",
@@ -862,6 +865,12 @@ async def api_freehire_search(
     applied_sigs = {"ids": set(), "urls": set(), "pairs": set()}
     try:
         applied_sigs = get_applied_job_signatures()
+    except Exception:
+        pass
+
+    active_profile = None
+    try:
+        active_profile = get_active_profile()
     except Exception:
         pass
 
@@ -934,6 +943,23 @@ async def api_freehire_search(
         else:
             salary_str = ""
 
+        # Live score against active candidate profile
+        live_score = 0
+        score_reasons = []
+        score_flags = []
+        raw_skills = item.get("skills") or []
+        if active_profile:
+            eval_desc = item.get("description") or ""
+            if raw_skills and isinstance(raw_skills, list):
+                eval_desc = f"{eval_desc}\n\nTech Stack Skills: {', '.join(raw_skills)}"
+            try:
+                scored = score_job(title, eval_desc, display_location, profile=active_profile)
+                live_score = scored.get("score", 0)
+                score_reasons = scored.get("reasons", [])
+                score_flags = scored.get("red_flags", [])
+            except Exception:
+                pass
+
         formatted_jobs.append({
             "id": job_id,
             "public_slug": item.get("public_slug", ""),
@@ -946,7 +972,7 @@ async def api_freehire_search(
             "source": item.get("source", "freehire"),
             "url": url,
             "posted_at": item.get("posted_at", ""),
-            "skills": item.get("skills", []),
+            "skills": raw_skills,
             "description": item.get("description", ""),
             "summary": enrichment.get("summary", ""),
             "salary": salary_str,
@@ -955,6 +981,9 @@ async def api_freehire_search(
             "is_saved": is_saved,
             "saved_status": saved_status,
             "saved_score": saved_score,
+            "live_score": live_score,
+            "score_reasons": score_reasons,
+            "score_flags": score_flags,
             "is_applied": is_applied,
         })
 
@@ -1033,7 +1062,10 @@ async def api_freehire_import(body: FreeHireImportRequest):
         status=req_status,
     )
 
-    result = score_job(job.title, job.description, job.location, profile=profile)
+    eval_desc = job.description or ""
+    if job.tech_stack:
+        eval_desc = f"{eval_desc}\n\nTech Stack Skills: {job.tech_stack}"
+    result = score_job(job.title, eval_desc, job.location, profile=profile)
     job.relevance_score = result["score"]
     job.experience_level = result.get("experience_level", "")
     job.bd_friendly = result.get("bd_friendly", "unknown")
