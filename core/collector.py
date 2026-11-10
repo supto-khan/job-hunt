@@ -122,6 +122,8 @@ async def _fetch_from_source(source) -> list[Job]:
 
 def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
     """Score, filter, deduplicate, and store jobs. Shared by both tracks."""
+    from core.scorer import is_strictly_allowed_job
+
     stats.setdefault("filtered_out", 0)
     stats.setdefault("new", 0)
     stats.setdefault("updated", 0)
@@ -133,6 +135,12 @@ def _score_and_store(jobs: list[Job], stats: dict, profile: dict = None):
         url_str = (job.url or "").lower()
         comp_str = (job.company or "").lower()
         if "whatjobs.com" in url_str or "whatjobs" in url_str or "whatjobs" in comp_str:
+            stats["filtered_out"] += 1
+            continue
+
+        # Strict stack filter: ensure job matches Supto's target stack only
+        is_allowed, _ = is_strictly_allowed_job(job.title, job.description, job.tech_stack)
+        if not is_allowed:
             stats["filtered_out"] += 1
             continue
 
@@ -369,12 +377,17 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
     for r in results:
         all_jobs.extend(r)
 
-    # Filter strictly for remote if remote_only is True, and always exclude whatjobs spam
+    # Filter strictly for remote if remote_only is True, exclude whatjobs spam, and enforce strict tech stack
+    from core.scorer import is_strictly_allowed_job
     filtered_jobs = []
     for j in all_jobs:
         url_str = (j.url or "").lower()
         comp_str = (j.company or "").lower()
         if "whatjobs.com" in url_str or "whatjobs" in url_str or "whatjobs" in comp_str:
+            continue
+
+        # Strict stack filter: ensure job matches Supto's target stack only
+        if not is_strictly_allowed_job(j.title, j.description, j.tech_stack)[0]:
             continue
 
         if remote_only:

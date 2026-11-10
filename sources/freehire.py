@@ -176,6 +176,16 @@ class FreeHireSource(BaseSource):
         if "whatjobs.com" in url.lower() or "whatjobs" in url.lower() or "whatjobs" in company.lower():
             return None
 
+        # Skills & Tech stack
+        skills = item.get("skills") or []
+        tech_stack = ", ".join(skills) if isinstance(skills, list) else ""
+
+        # Strict stack validation: must match Supto's target stack (Angular, React, Laravel, PHP, Node.js, Next.js)
+        from core.scorer import is_strictly_allowed_job
+        is_ok, _ = is_strictly_allowed_job(title, item.get("description") or "", tech_stack)
+        if not is_ok:
+            return None
+
         # Location & work mode normalization
         loc = (item.get("location") or "").strip()
         work_mode = item.get("work_mode") or ""
@@ -186,10 +196,6 @@ class FreeHireSource(BaseSource):
                 location = loc or "Remote"
         else:
             location = loc or "Remote"
-
-        # Skills & Tech stack
-        skills = item.get("skills") or []
-        tech_stack = ", ".join(skills) if isinstance(skills, list) else ""
 
         # Enrichment (Salary, Seniority, Description summary)
         enrichment = item.get("enrichment") or {}

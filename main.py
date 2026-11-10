@@ -886,8 +886,16 @@ async def api_freehire_search(
         comp_norm = company.strip().lower()
         tit_norm = title.strip().lower()
 
+        raw_skills = item.get("skills") or []
+
         # Exclude whatjobs.com aggregator spam from search results
         if "whatjobs.com" in clean_url or "whatjobs" in clean_url or "whatjobs" in comp_norm:
+            continue
+
+        # Strict stack filter: ensure job matches Supto's target stack only
+        from core.scorer import is_strictly_allowed_job
+        is_ok, _ = is_strictly_allowed_job(title, item.get("description") or "", ", ".join(raw_skills))
+        if not is_ok:
             continue
 
         base_url = clean_url.split("?")[0].rstrip("/")
@@ -1019,6 +1027,14 @@ async def api_purge_whatjobs():
     return {"ok": True, **result}
 
 
+@app.post("/api/jobs/purge-non-matching")
+async def api_purge_non_matching():
+    """Purge all records not strictly matching Angular, React, Laravel, PHP, Node.js, Next.js."""
+    from core.database import purge_non_matching_stack_jobs
+    result = purge_non_matching_stack_jobs()
+    return {"ok": True, **result}
+
+
 @app.post("/api/freehire/import")
 async def api_freehire_import(body: FreeHireImportRequest):
     """Import a FreeHire job into local DB with automatic profile scoring."""
@@ -1026,6 +1042,12 @@ async def api_freehire_import(body: FreeHireImportRequest):
     comp_lower = (body.company or "").lower()
     if "whatjobs.com" in url_lower or "whatjobs" in url_lower or "whatjobs" in comp_lower:
         return {"ok": False, "error": "Postings from whatjobs.com are blocked and cannot be imported."}
+
+    tech_stack = ", ".join(body.skills) if body.skills else ""
+    from core.scorer import is_strictly_allowed_job
+    is_ok, reason = is_strictly_allowed_job(body.title, body.description, tech_stack)
+    if not is_ok:
+        return {"ok": False, "error": f"Postings not matching allowed tech stacks cannot be imported: {reason}"}
 
     from datetime import datetime
     from core.models import Job

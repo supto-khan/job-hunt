@@ -147,9 +147,97 @@ def check_bd_friendly(location: str, description: str,
     }
 
 
+# ── Strict Tech Stack Guardrails for Supto's CVs ──────────────────────────────
+# Allowed tech stacks: Angular, React, Laravel, PHP, Node.js, Next.js
+REQUIRED_STACK_PATTERNS = [
+    r'\bangular\b', r'\bionic\b',
+    r'\breact\b(?! native)', r'\breactjs\b', r'\breact\.js\b',
+    r'\bnext\.?js\b', r'\bnextjs\b',
+    r'\blaravel\b',
+    r'\bphp\b',
+    r'\bnode\.?js\b', r'\bnodejs\b', r'\bnode\b',
+]
+
+DISQUALIFIED_TITLE_PATTERNS = [
+    r'\bjava\b(?!script)', r'\bspring\b', r'\bspring\s*boot\b', r'\bspringboot\b', r'\bkotlin\b', r'\bscala\b', r'\bjvm\b',
+    r'\.net\b', r'\bdotnet\b', r'\bc#\b', r'\bcsharp\b', r'\basp\.net\b', r'\bblazor\b', r'\bwpf\b', r'\bwcf\b',
+    r'\bpython\b', r'\bdjango\b', r'\bfastapi\b', r'\bflask\b', r'\bpyspark\b',
+    r'\bruby\b', r'\brails\b', r'\bruby\s+on\s+rails\b',
+    r'\bgolang\b', r'\bgo\s+(developer|engineer|backend)\b', r'\brust\b', r'\bc\+\+\b', r'\bcpp\b',
+    r'\bflutter\b', r'\bswift\b', r'\bios\s+(developer|engineer)\b', r'\bandroid\s+(developer|engineer)\b',
+    r'\bdevops\b', r'\bplatform\s+engineer\b', r'\bsre\b', r'\bsite\s+reliability\b',
+    r'\bdata\s+engineer\b', r'\bdata\s+scientist\b', r'\bmachine\s+learning\b', r'\bml\s+engineer\b',
+    r'\bqa\s+(engineer|lead|analyst)\b', r'\bqa\s+automation\b', r'\bengineering\s+manager\b',
+    r'\bproduct\s+manager\b', r'\bscrum\s+master\b', r'\bdata\s+analyst\b',
+    r'\bwordpress\b', r'\bshopify\b', r'\bmagento\b', r'\bdrupal\b', r'\bsalesforce\b', r'\bwebflow\b'
+]
+
+DISQUALIFIED_BACKEND_STACKS = [
+    r'\bjava\b(?!script)', r'\bspring\b', r'\bspring-boot\b', r'\.net\b', r'\bc#\b', r'\bcsharp\b',
+    r'\bpython\b', r'\bdjango\b', r'\bfastapi\b', r'\bruby\b', r'\brails\b', r'\bgolang\b', r'\brust\b', r'\bc\+\+\b'
+]
+
+ALLOWED_BACKEND_STACKS = [
+    r'\blaravel\b', r'\bphp\b', r'\bnode\.?js\b', r'\bnodejs\b', r'\bnode\b', r'\bexpress\b', r'\bnest\.?js\b', r'\bnestjs\b'
+]
+
+
+def is_strictly_allowed_job(title: str, description: str = "", tech_stack: str = "") -> tuple[bool, str]:
+    """Validate that a job strictly matches Supto's target stack:
+    Angular, React, Laravel, PHP, Node.js, Next.js.
+    Rejects any job with conflicting languages (.NET, Java, Python, Spring Boot, Ruby, Go, Rust, C++)
+    or non-developer titles (DevOps, Platform Engineer, Engineering Manager, etc.).
+    """
+    t_lower = (title or "").lower()
+    desc_lower = (description or "").lower()
+    stack_lower = (tech_stack or "").lower()
+    full_text = f"{t_lower} {desc_lower} {stack_lower}"
+
+    # 1. Instant title disqualification
+    for pat in DISQUALIFIED_TITLE_PATTERNS:
+        if re.search(pat, t_lower):
+            return False, f"Title contains non-target tech or role"
+
+    # 2. Must contain at least one required stack in title, description, or tech_stack
+    has_target = any(re.search(pat, full_text) for pat in REQUIRED_STACK_PATTERNS)
+    if not has_target:
+        return False, "Does not match required stack (Angular, React, Laravel, PHP, Node.js, Next.js)"
+
+    # 3. For Full-Stack, Backend, or general roles: if tech_stack or title lists conflicting backend without allowed backend
+    is_fullstack_or_backend = any(k in t_lower for k in [
+        'full stack', 'fullstack', 'full-stack', 'backend', 'back end', 'back-end',
+        'software engineer', 'software developer', 'web developer'
+    ])
+
+    if is_fullstack_or_backend:
+        has_allowed_backend = any(re.search(pat, full_text) for pat in ALLOWED_BACKEND_STACKS)
+        has_disqualified_backend = any(re.search(pat, stack_lower) for pat in DISQUALIFIED_BACKEND_STACKS)
+
+        # If the job explicitly specifies a non-target backend (Java, .NET, Python, etc.)
+        # and has no Node or Laravel/PHP backend, reject!
+        if has_disqualified_backend and not has_allowed_backend:
+            return False, "Full-stack/backend role requires non-target backend"
+
+    return True, "OK"
+
+
 def score_job(title: str, description: str, location: str = "",
               profile: dict = None) -> dict:
     """Score a job 0-100 against the active (or passed) profile with exact word-boundary matching."""
+    # 0. Strict tech stack validation guardrail
+    is_allowed, disq_reason = is_strictly_allowed_job(title, description)
+    if not is_allowed:
+        return {
+            "score": 0,
+            "tech_stack": [],
+            "experience_level": "mid",
+            "reasons": [],
+            "red_flags": [f"Disqualified: {disq_reason}"],
+            "india_friendly": "no",
+            "bd_friendly": "no",
+            "location_note": disq_reason,
+        }
+
     profile = profile or get_active_profile()
     search = profile["search"]
     scoring = profile["scoring"]
@@ -172,6 +260,25 @@ def score_job(title: str, description: str, location: str = "",
     full_text = f"{title} {description}".lower()
     title_lower = title.lower()
 
+    # Title negative match: INSTANT DISQUALIFICATION (score = 0)
+    title_negatives = []
+    for kw in neg_titles:
+        kw_clean = kw.strip().lower()
+        if kw_clean and re.search(r'\b' + re.escape(kw_clean) + r'\b', title_lower):
+            title_negatives.append(kw)
+
+    if title_negatives:
+        return {
+            "score": 0,
+            "tech_stack": [],
+            "experience_level": "mid",
+            "reasons": [],
+            "red_flags": [f"Disqualified: Title contains {', '.join(title_negatives[:4])}"],
+            "india_friendly": "no",
+            "bd_friendly": "no",
+            "location_note": "Disqualified title",
+        }
+
     # Title relevance matching with word boundaries
     title_matches = []
     for kw in pos_titles:
@@ -183,17 +290,6 @@ def score_job(title: str, description: str, location: str = "",
         pts = min(len(title_matches) * 12, w_title)
         score += pts
         reasons.append(f"Title match: {', '.join(title_matches[:6])}")
-
-    title_negatives = []
-    for kw in neg_titles:
-        kw_clean = kw.strip().lower()
-        if kw_clean and re.search(r'\b' + re.escape(kw_clean) + r'\b', title_lower):
-            title_negatives.append(kw)
-
-    if title_negatives:
-        penalty = len(title_negatives) * 15
-        score -= penalty
-        red_flags.append(f"Title contains: {', '.join(title_negatives[:4])}")
 
     # Tech stack: regex word boundaries
     tech_found = extract_tech_stack(full_text, profile=profile)
@@ -218,8 +314,16 @@ def score_job(title: str, description: str, location: str = "",
             for mh in must_have if mh.strip()
         )
         if not has_must_have:
-            score -= 40
-            red_flags.append(f"Missing required tech: {', '.join(must_have)}")
+            return {
+                "score": 0,
+                "tech_stack": tech_found,
+                "experience_level": exp_level if 'exp_level' in locals() else "mid",
+                "reasons": reasons,
+                "red_flags": [f"Disqualified: Missing required tech ({', '.join(must_have)})"],
+                "india_friendly": "no",
+                "bd_friendly": "no",
+                "location_note": "Missing required tech",
+            }
 
     # Experience lookup
     exp_level = estimate_experience_level(full_text)

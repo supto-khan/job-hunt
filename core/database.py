@@ -286,8 +286,53 @@ def purge_whatjobs_data() -> dict:
     return {"deleted_jobs": deleted_jobs, "deleted_outreach": deleted_outreach}
 
 
+def purge_non_matching_stack_jobs() -> dict:
+    """Remove all jobs and associated outreach records that do not strictly match
+    Supto's target stack: Angular, React, Laravel, PHP, Node.js, Next.js, or have
+    disqualified technologies (Java, .NET, Python, Spring Boot, Ruby, Go, etc.).
+    """
+    from core.scorer import is_strictly_allowed_job
+    conn = get_connection()
+    deleted_jobs = 0
+    deleted_outreach = 0
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, title, description, tech_stack FROM jobs")
+            rows = cur.fetchall()
+            ids_to_delete = []
+            for r in rows:
+                ok, _ = is_strictly_allowed_job(
+                    r.get("title") or "",
+                    r.get("description") or "",
+                    r.get("tech_stack") or ""
+                )
+                if not ok:
+                    ids_to_delete.append(r["id"])
+
+            if ids_to_delete:
+                for i in range(0, len(ids_to_delete), 500):
+                    chunk = ids_to_delete[i:i + 500]
+                    placeholders = ", ".join(["%s"] * len(chunk))
+                    cur.execute(f"DELETE FROM outreach WHERE job_id IN ({placeholders})", chunk)
+                    deleted_outreach += cur.rowcount
+                    cur.execute(f"DELETE FROM jobs WHERE id IN ({placeholders})", chunk)
+                    deleted_jobs += cur.rowcount
+    finally:
+        conn.close()
+    return {"deleted_jobs": deleted_jobs, "deleted_outreach": deleted_outreach}
+
+
 def insert_job(job_dict: dict) -> str:
     if is_blacklisted_job(job_dict):
+        return "filtered"
+
+    from core.scorer import is_strictly_allowed_job
+    is_allowed, _ = is_strictly_allowed_job(
+        job_dict.get("title") or "",
+        job_dict.get("description") or "",
+        job_dict.get("tech_stack") or ""
+    )
+    if not is_allowed:
         return "filtered"
 
     conn = get_connection()
