@@ -58,6 +58,60 @@ class FreeHireSource(BaseSource):
             pass
 
         async with httpx.AsyncClient(timeout=30) as client:
+            # ── PHASE 1: Find jobs that accept Bangladesh / Bangladeshi candidates first ──
+            bd_queries = [
+                {"countries": "BD", "is_tech": "tech", "limit": 100},
+            ]
+            for core_t in ["angular", "react", "nextjs", "laravel", "php", "nodejs", "frontend", "full stack"]:
+                bd_queries.append({
+                    "regions": "apac",
+                    "work_mode": "remote",
+                    "q": core_t,
+                    "limit": 50,
+                    "is_tech": "tech",
+                })
+                bd_queries.append({
+                    "q": f"{core_t} bangladesh",
+                    "limit": 50,
+                    "is_tech": "tech",
+                })
+
+            for q_params in bd_queries:
+                q_params["source_type_exclude"] = "aggregator"
+                if self.posted_within_days and self.posted_within_days > 0:
+                    q_params["posted_within_days"] = self.posted_within_days
+                try:
+                    resp = await client.get(self.BASE_URL, headers=headers, params=q_params)
+                    if resp.status_code != 200:
+                        continue
+                    data = resp.json()
+                    items = data.get("data", [])
+                    for item in items:
+                        url = item.get("url", "")
+                        if not url or url in seen_urls:
+                            continue
+                        clean_url = url.strip().lower()
+                        if "whatjobs.com" in clean_url or "whatjobs" in clean_url:
+                            continue
+                        comp = (item.get("company") or "").strip().lower()
+                        if "whatjobs" in comp:
+                            continue
+
+                        base_u = clean_url.split("?")[0].rstrip("/")
+                        if clean_url in applied_sigs["urls"] or (base_u and base_u in applied_sigs["urls"]):
+                            continue
+                        tit = (item.get("title") or "").strip().lower()
+                        if (comp, tit) in applied_sigs["pairs"]:
+                            continue
+
+                        seen_urls.add(url)
+                        job = self._map_job(item)
+                        if job:
+                            jobs.append(job)
+                except Exception:
+                    continue
+
+            # ── PHASE 2: Current standard search (worldwide remote across profile terms) ──
             for term in terms:
                 for page in range(self.pages_per_query):
                     offset = page * self.limit_per_query
@@ -209,6 +263,9 @@ class FreeHireSource(BaseSource):
         if summary and summary not in desc:
             desc = f"{summary}\n\n{desc}" if desc else summary
 
+        from core.scorer import check_bd_friendly
+        bd_info = check_bd_friendly(location, desc)
+
         return Job(
             title=title,
             company=company,
@@ -221,6 +278,9 @@ class FreeHireSource(BaseSource):
             experience_level=experience_level,
             salary=salary,
             job_type=job_type,
+            bd_friendly=bd_info["result"],
+            india_friendly=bd_info["result"],
+            location_note=bd_info["note"],
         )
 
     @staticmethod

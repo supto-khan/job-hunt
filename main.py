@@ -956,6 +956,11 @@ async def api_freehire_search(
         score_reasons = []
         score_flags = []
         raw_skills = item.get("skills") or []
+        from core.scorer import check_bd_friendly
+        bd_check = check_bd_friendly(display_location, item.get("description") or "")
+        bd_friendly_val = bd_check["result"]
+        bd_note_val = bd_check["note"]
+
         if active_profile:
             eval_desc = item.get("description") or ""
             if raw_skills and isinstance(raw_skills, list):
@@ -990,10 +995,15 @@ async def api_freehire_search(
             "saved_status": saved_status,
             "saved_score": saved_score,
             "live_score": live_score,
+            "bd_friendly": bd_friendly_val,
+            "bd_note": bd_note_val,
             "score_reasons": score_reasons,
             "score_flags": score_flags,
             "is_applied": is_applied,
         })
+
+    # Sort formatted jobs: 100% scores and Bangladesh-friendly jobs prioritized first
+    formatted_jobs.sort(key=lambda x: (x.get("live_score", 0), 1 if x.get("bd_friendly") == "yes" else 0), reverse=True)
 
     return {
         "jobs": formatted_jobs,

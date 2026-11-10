@@ -19,6 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setQuickSearch(term) {
     document.getElementById('fh-query').value = term;
+    document.getElementById('fh-region').value = 'all';
+    document.getElementById('fh-work-mode').value = 'remote';
+    document.getElementById('fh-posted').value = '30';
+    executeSearch(0);
+}
+
+function setBdSearch() {
+    document.getElementById('fh-query').value = '';
+    document.getElementById('fh-region').value = 'apac';
     document.getElementById('fh-work-mode').value = 'remote';
     document.getElementById('fh-posted').value = '30';
     executeSearch(0);
@@ -199,7 +208,9 @@ function renderJobs() {
 
         const scoreVal = job.live_score !== undefined ? job.live_score : (job.saved_score || 0);
         let scoreBadge = '';
-        if (scoreVal >= 80) {
+        if (scoreVal === 100 && (job.bd_friendly === 'yes' || (job.score_reasons && job.score_reasons.some(r => r.includes('Bangladesh'))))) {
+            scoreBadge = `<span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-600 text-white shadow-xs inline-flex items-center gap-1" title="${(job.score_reasons || []).join('; ')}"><span>🇧🇩</span> 100% Match · Accepts BD</span>`;
+        } else if (scoreVal >= 80) {
             scoreBadge = `<span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="${(job.score_reasons || []).join('; ')}">⚡ ${scoreVal}% Match</span>`;
         } else if (scoreVal >= 50) {
             scoreBadge = `<span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-teal-50 text-teal-800 border border-teal-200" title="${(job.score_reasons || []).join('; ')}">${scoreVal}% Match</span>`;

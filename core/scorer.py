@@ -57,94 +57,69 @@ def check_bd_friendly(location: str, description: str,
         result: 'yes' | 'no' | 'maybe'
         note: explanation string
     """
-    profile = profile or get_active_profile()
-    loc_cfg = profile["location"]
-    bd_pos = loc_cfg.get("bd_positive") or loc_cfg.get("india_positive") or []
-    bd_neg = loc_cfg.get("bd_negative") or loc_cfg.get("india_negative") or []
-    tz_good_list = loc_cfg.get("timezone_compatible") or []
-    tz_bad_list = loc_cfg.get("timezone_incompatible") or []
+    loc_lower = (location or "").lower()
+    desc_lower = (description or "").lower()
+    full_text = f"{loc_lower} {desc_lower}"
 
-    full_text = f"{location} {description}".lower()
-    loc_lower = location.lower()
-
-    positive_hits = [kw for kw in bd_pos if kw in full_text]
-    negative_hits = [kw for kw in bd_neg if kw in full_text]
-    tz_good = [kw for kw in tz_good_list if kw in full_text]
-    tz_bad = [kw for kw in tz_bad_list if kw in full_text]
-
-    if negative_hits:
-        return {
-            "result": "no",
-            "note": f"Restricted: {', '.join(negative_hits[:3])}",
-        }
-    if tz_bad:
-        return {
-            "result": "no",
-            "note": f"Timezone mismatch: {', '.join(tz_bad[:2])}",
-        }
-
-    bd_direct = any(kw in full_text for kw in [
-        "bangladesh", "dhaka", "chittagong", "chattogram", "sylhet",
-        "rajshahi", "khulna", "barishal", "rangpur", "comilla", "cumilla",
-        "remote - bangladesh",
-    ])
-    if bd_direct:
-        return {
-            "result": "yes",
-            "note": f"Location mentioned: {', '.join(positive_hits[:3])}",
-        }
-
-    global_signals = any(kw in full_text for kw in [
-        "worldwide", "anywhere", "global", "work from anywhere",
-        "location independent", "globally distributed",
-    ])
-    if global_signals:
-        note_parts = [h for h in positive_hits if h in [
-            "worldwide", "anywhere", "global", "work from anywhere",
-            "location independent", "globally distributed",
-        ]]
-        return {
-            "result": "yes",
-            "note": f"Global remote: {', '.join(note_parts[:3])}",
-        }
-
-    if any(kw in full_text for kw in ["apac", "asia", "asia pacific", "asia-pacific"]):
-        return {
-            "result": "yes",
-            "note": f"APAC region: {', '.join(positive_hits[:3])}",
-        }
-    if tz_good:
-        return {
-            "result": "maybe",
-            "note": f"Compatible timezone: {', '.join(tz_good[:2])}",
-        }
-
-    if "remote" in loc_lower and not any(
-        region in loc_lower for region in [
-            "us", "usa", "uk", "europe", "eu", "canada",
-            "germany", "france", "spain", "australia",
-        ]
-    ):
-        return {
-            "result": "maybe",
-            "note": "Remote — no region specified, may accept Bangladesh",
-        }
-
-    non_bd_regions = [
-        "united states", "usa", "us", "canada", "uk",
-        "united kingdom", "europe", "eu", "germany",
-        "france", "australia", "spain", "netherlands",
+    # 1. Hard restrictions that forbid Bangladeshi candidates
+    negative_patterns = [
+        r'\bus only\b', r'\busa only\b', r'\bus-only\b', r'\bunited states only\b',
+        r'\bmust reside in the (us|usa|united states)\b', r'\bmust be located in the (us|usa|united states)\b',
+        r'\bus-based\b', r'\bus citizen\b', r'\bus person\b', r'\bno visa sponsorship\b',
+        r'\bcanada only\b', r'\buk only\b', r'\beu only\b', r'\beurope only\b',
+        r'\bgermany only\b', r'\bspain only\b', r'\blatam only\b', r'\bbrazil only\b',
+        r'\bsecurity clearance\b', r'\bw2 only\b'
     ]
-    if any(r in loc_lower for r in non_bd_regions):
-        return {
-            "result": "no",
-            "note": f"Location restricted to: {location}",
-        }
+    for pat in negative_patterns:
+        if re.search(pat, full_text):
+            return {"result": "no", "note": f"Location restricted: {pat}"}
 
-    return {
-        "result": "maybe",
-        "note": "No clear location restriction found",
-    }
+    # 2. Check non-BD country locked locations (e.g. 'Remote (US)', 'San Francisco, CA')
+    non_bd_loc_patterns = [
+        r'\b(us|usa|united states|canada|uk|united kingdom|europe|germany|france|spain|italy|ireland|portugal|netherlands|poland|brazil|mexico|colombia|argentina|peru|australia)\b'
+    ]
+    is_loc_locked = any(re.search(pat, loc_lower) for pat in non_bd_loc_patterns)
+
+    # 3. Direct Bangladesh mentions in location or description
+    bd_direct_patterns = [
+        r'\bbangladesh\b', r'\bdhaka\b', r'\bchittagong\b', r'\bchattogram\b', r'\bsylhet\b',
+        r'\brajshahi\b', r'\bkhulna\b', r'\bbarishal\b', r'\brangpur\b', r'\bcomilla\b', r'\bcumilla\b',
+        r'\bremote\s*[-–]\s*bangladesh\b', r'\bremote\s*\(\s*bd\s*\)\b', r'\bbd\s*remote\b'
+    ]
+    for pat in bd_direct_patterns:
+        if re.search(pat, full_text):
+            return {"result": "yes", "note": "Bangladesh location specified"}
+
+    # 4. Explicit Worldwide / Global Remote / APAC locations
+    worldwide_loc_patterns = [
+        r'\bworldwide\b', r'\banywhere\b', r'\bglobal\b', r'\bwork from anywhere\b',
+        r'\bremote\s*[-–]\s*(worldwide|anywhere|global)\b',
+        r'\bremote\s*\((worldwide|anywhere|global)\)\b',
+        r'\bapac\b', r'\basia\b', r'\basia\s*pacific\b', r'\bsouth\s*asia\b'
+    ]
+    for pat in worldwide_loc_patterns:
+        if re.search(pat, loc_lower):
+            return {"result": "yes", "note": "Global/APAC remote location"}
+
+    # 5. Global remote phrasing in description without foreign country lock
+    worldwide_desc_patterns = [
+        r'\bwork from anywhere in the world\b', r'\bopen to remote worldwide\b',
+        r'\bhire (globally|anywhere|worldwide)\b', r'\bworldwide remote\b',
+        r'\bcontractor worldwide\b', r'\banywhere in the world\b',
+        r'\bglobally distributed team\b', r'\bfully distributed across the globe\b'
+    ]
+    has_worldwide_desc = any(re.search(pat, desc_lower) for pat in worldwide_desc_patterns)
+    if has_worldwide_desc and not is_loc_locked:
+        return {"result": "yes", "note": "Worldwide remote in description"}
+
+    if is_loc_locked:
+        return {"result": "no", "note": f"Location locked to: {location}"}
+
+    # 6. Generic 'Remote' with no country restrictions
+    if "remote" in loc_lower:
+        return {"result": "maybe", "note": "Remote (unspecified region)"}
+
+    return {"result": "maybe", "note": "No clear location restriction found"}
 
 
 # ── Strict Tech Stack Guardrails for Supto's CVs ──────────────────────────────
@@ -160,10 +135,10 @@ REQUIRED_STACK_PATTERNS = [
 
 DISQUALIFIED_TITLE_PATTERNS = [
     r'\bjava\b(?!script)', r'\bspring\b', r'\bspring\s*boot\b', r'\bspringboot\b', r'\bkotlin\b', r'\bscala\b', r'\bjvm\b',
-    r'\.net\b', r'\bdotnet\b', r'\bc#\b', r'\bcsharp\b', r'\basp\.net\b', r'\bblazor\b', r'\bwpf\b', r'\bwcf\b',
+    r'\.net\b', r'\bdotnet\b', r'\bc#(?![a-zA-Z0-9_])', r'\bcsharp\b', r'\basp\.net\b', r'\bblazor\b', r'\bwpf\b', r'\bwcf\b',
     r'\bpython\b', r'\bdjango\b', r'\bfastapi\b', r'\bflask\b', r'\bpyspark\b',
     r'\bruby\b', r'\brails\b', r'\bruby\s+on\s+rails\b',
-    r'\bgolang\b', r'\bgo\s+(developer|engineer|backend)\b', r'\brust\b', r'\bc\+\+\b', r'\bcpp\b',
+    r'\bgolang\b', r'\bgo\s+(developer|engineer|backend)\b', r'\brust\b', r'\bc\+\+(?![a-zA-Z0-9_])', r'\bcpp\b',
     r'\bflutter\b', r'\bswift\b', r'\bios\s+(developer|engineer)\b', r'\bandroid\s+(developer|engineer)\b',
     r'\bdevops\b', r'\bplatform\s+engineer\b', r'\bsre\b', r'\bsite\s+reliability\b',
     r'\bdata\s+engineer\b', r'\bdata\s+scientist\b', r'\bmachine\s+learning\b', r'\bml\s+engineer\b',
@@ -173,8 +148,8 @@ DISQUALIFIED_TITLE_PATTERNS = [
 ]
 
 DISQUALIFIED_BACKEND_STACKS = [
-    r'\bjava\b(?!script)', r'\bspring\b', r'\bspring-boot\b', r'\.net\b', r'\bc#\b', r'\bcsharp\b',
-    r'\bpython\b', r'\bdjango\b', r'\bfastapi\b', r'\bruby\b', r'\brails\b', r'\bgolang\b', r'\brust\b', r'\bc\+\+\b'
+    r'\bjava\b(?!script)', r'\bspring\b', r'\bspring-boot\b', r'\.net\b', r'\bc#(?![a-zA-Z0-9_])', r'\bcsharp\b',
+    r'\bpython\b', r'\bdjango\b', r'\bfastapi\b', r'\bruby\b', r'\brails\b', r'\bgolang\b', r'\brust\b', r'\bc\+\+(?![a-zA-Z0-9_])'
 ]
 
 ALLOWED_BACKEND_STACKS = [
@@ -350,8 +325,17 @@ def score_job(title: str, description: str, location: str = "",
         score += min(len(signal_matches) * 4, w_signal)
         reasons.append(f"Signals: {', '.join(signal_matches[:5])}")
 
-    # Bangladesh-friendly
+    # Bangladesh-friendly evaluation
     bd_check = check_bd_friendly(location, description, profile=profile)
+
+    # USER RULE: If any job accepts Bangladeshi people and matches the candidate tech stack,
+    # mark it as 100 score!
+    if bd_check["result"] == "yes":
+        score = 100
+        reasons.insert(0, f"⚡ 100% Match: Accepts Bangladesh applicants ({bd_check['note']}) & matches tech stack")
+    elif bd_check["result"] == "no":
+        score = max(0, score - 50)
+        red_flags.append(f"Location restriction: {bd_check['note']}")
 
     score = max(0, min(100, score))
 
