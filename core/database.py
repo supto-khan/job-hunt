@@ -230,15 +230,15 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
 
-        # Purge blacklisted aggregator data (whatjobs.com)
+        # Purge blacklisted aggregator data (whatjobs.com) - never delete applied jobs
         pattern = "%whatjobs%"
         cur.execute("""
             DELETE FROM outreach WHERE job_id IN (
-                SELECT id FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+                SELECT id FROM jobs WHERE (url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s) AND status != 'applied'
             ) OR company_domain LIKE %s OR company LIKE %s
         """, (pattern, pattern, pattern, pattern, pattern, pattern))
         cur.execute("""
-            DELETE FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+            DELETE FROM jobs WHERE (url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s) AND status != 'applied'
         """, (pattern, pattern, pattern, pattern))
 
     conn.close()
@@ -272,13 +272,13 @@ def purge_whatjobs_data() -> dict:
             pattern = "%whatjobs%"
             cur.execute("""
                 DELETE FROM outreach WHERE job_id IN (
-                    SELECT id FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+                    SELECT id FROM jobs WHERE (url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s) AND status != 'applied'
                 ) OR company_domain LIKE %s OR company LIKE %s
             """, (pattern, pattern, pattern, pattern, pattern, pattern))
             deleted_outreach = cur.rowcount
 
             cur.execute("""
-                DELETE FROM jobs WHERE url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s
+                DELETE FROM jobs WHERE (url LIKE %s OR company_domain LIKE %s OR company LIKE %s OR source LIKE %s) AND status != 'applied'
             """, (pattern, pattern, pattern, pattern))
             deleted_jobs = cur.rowcount
     finally:
@@ -290,6 +290,7 @@ def purge_non_matching_stack_jobs() -> dict:
     """Remove all jobs and associated outreach records that do not strictly match
     Supto's target stack: Angular, React, Laravel, PHP, Node.js, Next.js, or have
     disqualified technologies (Java, .NET, Python, Spring Boot, Ruby, Go, etc.).
+    NEVER deletes jobs that the user has marked as 'applied'.
     """
     from core.scorer import is_strictly_allowed_job
     conn = get_connection()
@@ -297,7 +298,7 @@ def purge_non_matching_stack_jobs() -> dict:
     deleted_outreach = 0
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, title, description, tech_stack FROM jobs")
+            cur.execute("SELECT id, title, description, tech_stack FROM jobs WHERE status != 'applied'")
             rows = cur.fetchall()
             ids_to_delete = []
             for r in rows:
@@ -403,14 +404,15 @@ def insert_job(job_dict: dict) -> str:
 
 
 def cleanup_old_jobs(days: int = 14) -> int:
+    """Delete stale jobs older than N days. NEVER deletes jobs marked as 'applied'."""
     from datetime import timedelta
     cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(_prep_sql("SELECT COUNT(*) AS count FROM jobs WHERE last_seen != '' AND last_seen < ?"), (cutoff,))
+            cur.execute(_prep_sql("SELECT COUNT(*) AS count FROM jobs WHERE last_seen != '' AND last_seen < ? AND status != 'applied'"), (cutoff,))
             count = cur.fetchone()["count"]
-            cur.execute(_prep_sql("DELETE FROM jobs WHERE last_seen != '' AND last_seen < ?"), (cutoff,))
+            cur.execute(_prep_sql("DELETE FROM jobs WHERE last_seen != '' AND last_seen < ? AND status != 'applied'"), (cutoff,))
             return count
     finally:
         conn.close()

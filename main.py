@@ -743,7 +743,7 @@ async def api_rescore_all(
                 profile_id = target_profile.get("_id")
                 min_store = int((target_profile.get("scoring") or {}).get("min_score_to_store", 25))
 
-                if delete_below_min and result["score"] < min_store:
+                if delete_below_min and result["score"] < min_store and r.get("status") != "applied":
                     cur.execute("DELETE FROM jobs WHERE id = %s", (r["id"],))
                     deleted += 1
                     continue
@@ -789,7 +789,7 @@ async def api_freehire_search(
     is_tech: Optional[str] = "tech",
     posted_within_days: Optional[int] = 30,
     include_applied: bool = Query(False),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ):
     """Direct live query to FreeHire API with filters, excluding already applied jobs."""
@@ -801,8 +801,6 @@ async def api_freehire_search(
     from core.scorer import score_job
 
     params = {
-        "limit": limit,
-        "offset": offset,
         "source_type_exclude": "aggregator",
     }
     if q and q.strip():
@@ -835,31 +833,50 @@ async def api_freehire_search(
     if FREEHIRE_API_KEY:
         headers["Authorization"] = f"Bearer {FREEHIRE_API_KEY}"
 
+    raw_jobs = []
+    total = 0
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.get("https://freehire.me/api/v1/agent/jobs/search", headers=headers, params=params)
-            if resp.status_code != 200:
-                return {
-                    "error": f"FreeHire API returned status {resp.status_code}",
-                    "jobs": [],
-                    "total": 0,
-                    "limit": limit,
-                    "offset": offset,
-                    "hidden_applied": 0,
-                }
-            payload = resp.json()
-            raw_jobs = payload.get("data", [])
-            meta = payload.get("meta", {})
-            total = meta.get("total", len(raw_jobs))
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            current_offset = offset
+            remaining_limit = limit
+            while remaining_limit > 0:
+                chunk_limit = min(100, remaining_limit)
+                chunk_params = dict(params)
+                chunk_params["limit"] = chunk_limit
+                chunk_params["offset"] = current_offset
+                resp = await client.get("https://freehire.me/api/v1/agent/jobs/search", headers=headers, params=chunk_params)
+                if resp.status_code != 200:
+                    if not raw_jobs:
+                        return {
+                            "error": f"FreeHire API returned status {resp.status_code}",
+                            "jobs": [],
+                            "total": 0,
+                            "limit": limit,
+                            "offset": offset,
+                            "hidden_applied": 0,
+                        }
+                    break
+                payload = resp.json()
+                chunk_jobs = payload.get("data", [])
+                meta = payload.get("meta", {})
+                total = meta.get("total", total or len(chunk_jobs))
+                if not chunk_jobs:
+                    break
+                raw_jobs.extend(chunk_jobs)
+                current_offset += len(chunk_jobs)
+                remaining_limit -= len(chunk_jobs)
+                if len(chunk_jobs) < chunk_limit:
+                    break
     except Exception as e:
-        return {
-            "error": f"Failed to contact FreeHire API: {str(e)}",
-            "jobs": [],
-            "total": 0,
-            "limit": limit,
-            "offset": offset,
-            "hidden_applied": 0,
-        }
+        if not raw_jobs:
+            return {
+                "error": f"Failed to contact FreeHire API: {str(e)}",
+                "jobs": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset,
+                "hidden_applied": 0,
+            }
 
     # Load applied job signatures to automatically hide already applied jobs
     applied_sigs = {"ids": set(), "urls": set(), "pairs": set()}

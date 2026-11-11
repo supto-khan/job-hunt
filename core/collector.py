@@ -52,7 +52,7 @@ def log(msg):
 def _build_job_board_sources() -> list:
     """Build the list of sources fresh each run so JSearch uses current queries."""
     sources = [
-        FreeHireSource(limit_per_query=100, posted_within_days=30, pages_per_query=2),
+        FreeHireSource(limit_per_query=1000, posted_within_days=30, pages_per_query=10),
         RemotiveSource(),
         RemoteOKSource(),
         ArbeitnowSource(),
@@ -347,14 +347,14 @@ async def run_multi_profile_hunt(remote_only: bool = True) -> dict:
             seen_terms.add(clean)
             deduped_terms.append(t)
 
-    # 2. Build multi-source list with FreeHire querying all profile terms (max 100/page, 2 pages, direct ATS only)
+    # 2. Build multi-source list with FreeHire querying all profile terms (up to 1000/query, direct ATS only)
     sources = [
         FreeHireSource(
             queries=deduped_terms,
             work_mode="remote" if remote_only else None,
-            limit_per_query=100,
+            limit_per_query=1000,
             posted_within_days=30,
-            pages_per_query=2,
+            pages_per_query=10,
         ),
         RemotiveSource(),
         RemoteOKSource(),

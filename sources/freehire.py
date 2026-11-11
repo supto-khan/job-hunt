@@ -20,13 +20,13 @@ class FreeHireSource(BaseSource):
         self,
         queries: Optional[List[str]] = None,
         work_mode: Optional[str] = None,
-        limit_per_query: int = 100,
+        limit_per_query: int = 1000,
         posted_within_days: Optional[int] = 30,
-        pages_per_query: int = 2,
+        pages_per_query: int = 10,
     ):
         self.queries = queries
         self.work_mode = work_mode or FREEHIRE_WORK_MODE
-        self.limit_per_query = min(max(1, limit_per_query), 100)
+        self.limit_per_query = min(max(1, limit_per_query), 1000)
         self.posted_within_days = posted_within_days
         self.pages_per_query = max(1, pages_per_query)
         self.api_key = FREEHIRE_API_KEY
@@ -67,12 +67,12 @@ class FreeHireSource(BaseSource):
                     "regions": "apac",
                     "work_mode": "remote",
                     "q": core_t,
-                    "limit": 50,
+                    "limit": 100,
                     "is_tech": "tech",
                 })
                 bd_queries.append({
                     "q": f"{core_t} bangladesh",
-                    "limit": 50,
+                    "limit": 100,
                     "is_tech": "tech",
                 })
 
@@ -112,12 +112,19 @@ class FreeHireSource(BaseSource):
                     continue
 
             # ── PHASE 2: Current standard search (worldwide remote across profile terms) ──
+            # FreeHire API returns max 100 items per request; paginate in chunks of 100 up to limit_per_query (default 1000)
+            page_size = 100
+            max_pages = max(self.pages_per_query, (self.limit_per_query + page_size - 1) // page_size)
             for term in terms:
-                for page in range(self.pages_per_query):
-                    offset = page * self.limit_per_query
+                fetched_for_term = 0
+                for page in range(max_pages):
+                    if fetched_for_term >= self.limit_per_query:
+                        break
+                    offset = page * page_size
+                    cur_limit = min(page_size, self.limit_per_query - fetched_for_term)
                     params = {
                         "q": term,
-                        "limit": self.limit_per_query,
+                        "limit": cur_limit,
                         "offset": offset,
                         "is_tech": "tech",
                         "source_type_exclude": "aggregator",
@@ -136,6 +143,7 @@ class FreeHireSource(BaseSource):
                         items = data.get("data", [])
                         if not items:
                             break
+                        fetched_for_term += len(items)
 
                         for item in items:
                             url = item.get("url", "")
@@ -164,8 +172,8 @@ class FreeHireSource(BaseSource):
                             if job:
                                 jobs.append(job)
 
-                        # If fewer items returned than the limit, we've reached the last page
-                        if len(items) < self.limit_per_query:
+                        # If fewer items returned than the requested limit, we've reached the last page
+                        if len(items) < cur_limit:
                             break
                     except Exception:
                         break
